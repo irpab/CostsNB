@@ -1,0 +1,2 @@
+Application for managing records with expenses.
+Application allows to create tree of categories like "restaurants", "shopping", "gifts" and when the user makes the purchase app stores amount of money spent in the selected category.
