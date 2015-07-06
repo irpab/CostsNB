@@ -2,7 +2,7 @@
 #include <iomanip>
 #include <ctime>
 
-#include <QDebug>
+//#include <QDebug>
 
 #include "costs_nb_core.h"
 
