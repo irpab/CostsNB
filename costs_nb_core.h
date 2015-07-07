@@ -30,7 +30,7 @@ public:
 
     std::string toStr() const
     {
-        datetime + "   " + workaround::to_string(cost);
+        return datetime + "   " + workaround::to_string(cost);
     }
 
     std::string datetime;

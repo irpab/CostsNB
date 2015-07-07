@@ -80,6 +80,14 @@ bool Costs_nb_qml_proxy::category_add_sub(const QString &parentCategory, const Q
     return res;
 }
 
+bool Costs_nb_qml_proxy::category_rename(const QString &selectedCategory, const QString &newName)
+{
+    bool res = costs_nb_core->RenameCategory(QStr2str(selectedCategory), QStr2str(newName));
+    if (res)
+        update_qml_categoriesModel();
+    return res;
+}
+
 void Costs_nb_qml_proxy::update_qml_categoriesModel()
 {
     QStringList currentCategoriesCore;
@@ -92,6 +100,11 @@ void Costs_nb_qml_proxy::update_qml_categoriesModel()
 void Costs_nb_qml_proxy::update_qml_showExpensesModel(const QString &selectedCategory)
 {
     _qmlContext->setContextProperty("showExpensesModel", QVariant::fromValue(stdToQStrList(costs_nb_core->GetExpenses(QStr2str(selectedCategory)))));
+}
+
+void Costs_nb_qml_proxy::update_qml_showAllExpensesModel(const QString &selectedCategory)
+{
+    _qmlContext->setContextProperty("showExpensesModel", QVariant::fromValue(stdToQStrList(costs_nb_core->GetAllExpenses(QStr2str(selectedCategory)))));
 }
 
 void Costs_nb_qml_proxy::buy(const QString &selectedCategory, const unsigned int &cost)

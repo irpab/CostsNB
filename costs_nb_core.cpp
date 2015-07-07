@@ -152,6 +152,54 @@ void GetAllNestedExpenses(std::list<Expense_elem> &expenses, const Categories_el
     }
 }
 
+bool RenameCategory_internal(Categories_elem* categories, const std::string &oldName0, const std::string &newName)
+{
+    std::string oldName = RemoveDisplaySubCategoriesPrefix(oldName0);
+
+    if (!ValidateCategoryName(newName))
+        return false;
+
+    Categories_elem* category = GetSubCategoryByName(categories, oldName);
+    if (category == nullptr)
+        return false;
+
+    if (SubCategoriesContainCategory(categories, newName))
+        return false;
+
+    category->categoryName = newName;
+    return true;
+}
+
+std::list<std::string> GetExpenses_internal(Categories_elem* categories, const std::string &selectedCategory0)
+{
+    std::list<std::string> expenses;
+    std::string selectedCategory = RemoveDisplaySubCategoriesPrefix(selectedCategory0);
+
+    Categories_elem* category = GetSubCategoryByName(categories, selectedCategory);
+    if (category != nullptr) {
+        for (auto i = category->expenses.begin(); i != category->expenses.end(); ++i) {
+            expenses.push_back(i->toStr());
+        }
+    }
+    return expenses;
+}
+
+std::list<std::string> GetAllExpenses_internal(Categories_elem* categories, const std::string &selectedCategory0)
+{
+    std::list<std::string> expensesStr;
+    std::string selectedCategory = RemoveDisplaySubCategoriesPrefix(selectedCategory0);
+
+    Categories_elem* category = GetSubCategoryByName(categories, selectedCategory);
+    if (category != nullptr) {
+        std::list<Expense_elem> expenses;
+        GetAllNestedExpenses(expenses, category);
+        for (auto i = expenses.begin(); i != expenses.end(); ++i) {
+            expensesStr.push_back(i->toStr());
+        }
+    }
+    return expensesStr;
+}
+
 std::string intMonth2str(unsigned int month)
 {
     switch (month) {
@@ -280,18 +328,9 @@ bool Costs_nb_core::RemoveCategory(const std::string &removingCategoryName0)
     return true;
 }
 
-bool Costs_nb_core::RenameCategory(const std::string &oldName0, const std::string &newName)
+bool Costs_nb_core::RenameCategory(const std::string &oldName, const std::string &newName)
 {
-    std::string oldName = RemoveDisplaySubCategoriesPrefix(oldName0);
-
-    Categories_elem* category = GetSubCategoryByName(categories, oldName);
-    if (category == nullptr)
-        return false;
-
-    if (SubCategoriesContainCategory(category, newName))
-        return false;
-
-    category->categoryName = newName;
+    return RenameCategory_internal(categories, oldName, newName);
 }
 
 void Costs_nb_core::Buy(const std::string &selectedCategory, const unsigned int &cost)
@@ -314,30 +353,10 @@ void Costs_nb_core::Buy(const std::string &selectedCategory, const unsigned int 
 
 std::list<std::string> Costs_nb_core::GetExpenses(const std::string &selectedCategory0)
 {
-    std::list<std::string> expenses;
-    std::string selectedCategory = RemoveDisplaySubCategoriesPrefix(selectedCategory0);
-
-    Categories_elem* category = GetSubCategoryByName(categories, selectedCategory);
-    if (category != nullptr) {
-        for (auto i = category->expenses.begin(); i != category->expenses.end(); ++i) {
-            expenses.push_back(i->toStr());
-        }
-    }
-    return expenses;
+    return GetExpenses_internal(categories, selectedCategory0);
 }
 
 std::list<std::string> Costs_nb_core::GetAllExpenses(const std::string &selectedCategory0)
 {
-    std::list<std::string> expensesStr;
-    std::string selectedCategory = RemoveDisplaySubCategoriesPrefix(selectedCategory0);
-
-    Categories_elem* category = GetSubCategoryByName(categories, selectedCategory);
-    if (category != nullptr) {
-        std::list<Expense_elem> expenses;
-        GetAllNestedExpenses(expenses, category);
-        for (auto i = expenses.begin(); i != expenses.end(); ++i) {
-            expensesStr.push_back(i->toStr());
-        }
-    }
-    return expensesStr;
+    return GetAllExpenses_internal(categories, selectedCategory0);
 }

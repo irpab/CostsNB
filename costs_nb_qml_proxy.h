@@ -27,8 +27,10 @@ public:
     Q_INVOKABLE bool category_add(const QString &newCategory);
     Q_INVOKABLE bool category_remove(const QString &removingCategory);
     Q_INVOKABLE bool category_add_sub(const QString &parentCategory, const QString &newCategory);
+    Q_INVOKABLE bool category_rename(const QString &selectedCategory, const QString &newName);
     Q_INVOKABLE void buy(const QString &selectedCategory, const unsigned int &cost);
     Q_INVOKABLE void update_qml_showExpensesModel(const QString &selectedCategory);
+    Q_INVOKABLE void update_qml_showAllExpensesModel(const QString &selectedCategory);
 
 signals:
 

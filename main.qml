@@ -152,6 +152,29 @@ ApplicationWindow {
         }
     }
 
+    Dialog {
+        id: newRenameCategoryDialog
+        title: "Rename Category"
+        standardButtons: StandardButton.Ok | StandardButton.Cancel
+
+        TextField {
+            id: renameCategory
+            maximumLength: 20
+        }
+
+        onButtonClicked: {
+            Qt.inputMethod.hide();
+            if (clickedButton == StandardButton.Ok) {
+                var category_rename_res = costs_nb_qml_proxy.category_rename(tapped_category, renameCategory.text);
+                tapped_category = "";
+                if (!category_rename_res) {
+                    messageDialog.show("Renaming Failed")
+                }
+            }
+            renameCategory.text = "";
+        }
+    }
+
     Menu {
         id: categoryTapHoldMenu
         title: qsTr("&Category Manipulating")
@@ -174,13 +197,25 @@ ApplicationWindow {
         MenuItem {
             text: qsTr("&Rename Category")
             onTriggered: {
-                messageDialog.show("Not implemented yet");
+                if (tapped_category.substring(0, 2) == "> ") {
+                    renameCategory.text = tapped_category.substring(2);
+                } else {
+                    renameCategory.text = tapped_category;
+                }
+                newRenameCategoryDialog.open();
             }
         }
         MenuItem {
             text: qsTr("&Show Expenses")
             onTriggered: {
                 costs_nb_qml_proxy.update_qml_showExpensesModel(tapped_category);
+                showExpensesDialog.open();
+            }
+        }
+        MenuItem {
+            text: qsTr("&Show All Expenses")
+            onTriggered: {
+                costs_nb_qml_proxy.update_qml_showAllExpensesModel(tapped_category);
                 showExpensesDialog.open();
             }
         }
