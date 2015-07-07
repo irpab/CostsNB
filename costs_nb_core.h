@@ -11,12 +11,27 @@
 
 #define SUPPORTED_DB_VERSION 1
 
+namespace workaround // workaround
+{
+    template < typename T > std::string to_string( const T& n )
+    {
+        std::ostringstream stm ;
+        stm << n ;
+        return stm.str() ;
+    }
+}
+
 class Expense_elem
 {
 public:
     Expense_elem(std::string datetime0, unsigned int cost0) :
         datetime(datetime0), cost(cost0)
     {}
+
+    std::string toStr() const
+    {
+        datetime + "   " + workaround::to_string(cost);
+    }
 
     std::string datetime;
     unsigned int cost;
@@ -59,21 +74,13 @@ public:
     std::tuple<std::list<std::string>, std::string> GetCurrentCategories();
     bool CategorySelected(const std::string &selectedCategory);
     bool RemoveCategory(const std::string &selectedCategory);
+    bool RenameCategory(const std::string &oldName, const std::string &newName);
     void CategoryBack();
     bool CategoryAdd(const std::string &newCategory);
     bool CategoryAddSub(const std::string &parentCategory, const std::string &newCategory);
     void Buy(const std::string &selectedCategory, const unsigned int &cost);
     std::list<std::string> GetExpenses(const std::string &selectedCategory);
+    std::list<std::string> GetAllExpenses(const std::string &selectedCategory);
 };
-
-namespace workaround // workaround
-{
-    template < typename T > std::string to_string( const T& n )
-    {
-        std::ostringstream stm ;
-        stm << n ;
-        return stm.str() ;
-    }
-}
 
 #endif // COSTS_NB_CORE_H

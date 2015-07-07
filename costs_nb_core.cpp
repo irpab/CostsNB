@@ -142,6 +142,16 @@ bool AddSubCategory(Categories_elem* category, const std::string &newCategoryNam
     return true;
 }
 
+void GetAllNestedExpenses(std::list<Expense_elem> &expenses, const Categories_elem* category)
+{
+    for (auto i = category->expenses.begin(); i != category->expenses.end(); ++i) {
+        expenses.push_back(*i);
+    }
+    for (auto i = category->subCategories.begin(); i != category->subCategories.end(); ++i) {
+        GetAllNestedExpenses(expenses, *i);
+    }
+}
+
 std::string intMonth2str(unsigned int month)
 {
     switch (month) {
@@ -250,16 +260,6 @@ bool Costs_nb_core::CategoryAddSub(const std::string &parentCategoryName0, const
     return true;
 }
 
-void GetAllNestedExpenses(std::list<Expense_elem> &expenses, const Categories_elem* category)
-{
-    for (auto i = category->expenses.begin(); i != category->expenses.end(); ++i) {
-        expenses.push_back(*i);
-    }
-    for (auto i = category->subCategories.begin(); i != category->subCategories.end(); ++i) {
-        GetAllNestedExpenses(expenses, *i);
-    }
-}
-
 bool Costs_nb_core::RemoveCategory(const std::string &removingCategoryName0)
 {
     std::string removingCategoryName = RemoveDisplaySubCategoriesPrefix(removingCategoryName0);
@@ -278,6 +278,20 @@ bool Costs_nb_core::RemoveCategory(const std::string &removingCategoryName0)
     if (categories->subCategories.empty())
         CategoryBack();
     return true;
+}
+
+bool Costs_nb_core::RenameCategory(const std::string &oldName0, const std::string &newName)
+{
+    std::string oldName = RemoveDisplaySubCategoriesPrefix(oldName0);
+
+    Categories_elem* category = GetSubCategoryByName(categories, oldName);
+    if (category == nullptr)
+        return false;
+
+    if (SubCategoriesContainCategory(category, newName))
+        return false;
+
+    category->categoryName = newName;
 }
 
 void Costs_nb_core::Buy(const std::string &selectedCategory, const unsigned int &cost)
@@ -306,8 +320,24 @@ std::list<std::string> Costs_nb_core::GetExpenses(const std::string &selectedCat
     Categories_elem* category = GetSubCategoryByName(categories, selectedCategory);
     if (category != nullptr) {
         for (auto i = category->expenses.begin(); i != category->expenses.end(); ++i) {
-            expenses.push_back(i->datetime + "   " + workaround::to_string(i->cost));
+            expenses.push_back(i->toStr());
         }
     }
     return expenses;
+}
+
+std::list<std::string> Costs_nb_core::GetAllExpenses(const std::string &selectedCategory0)
+{
+    std::list<std::string> expensesStr;
+    std::string selectedCategory = RemoveDisplaySubCategoriesPrefix(selectedCategory0);
+
+    Categories_elem* category = GetSubCategoryByName(categories, selectedCategory);
+    if (category != nullptr) {
+        std::list<Expense_elem> expenses;
+        GetAllNestedExpenses(expenses, category);
+        for (auto i = expenses.begin(); i != expenses.end(); ++i) {
+            expensesStr.push_back(i->toStr());
+        }
+    }
+    return expensesStr;
 }
