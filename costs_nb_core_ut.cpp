@@ -160,11 +160,11 @@ TEST_CASE( "GetExpenses", "[internal]" ) {
   category->subCategories.push_back(cat11);
   category->subCategories.push_back(cat12);
 
-  Expense_elem e11_1 = Expense_elem("2015-Jul-01", 1);
-  Expense_elem e11_2 = Expense_elem("2015-Sep-01", 132);
-  Expense_elem e11_3 = Expense_elem("2015-Sep-17", 56);
-  Expense_elem e12_1 = Expense_elem("2015-Sep-01", 463);
-  Expense_elem e12_2 = Expense_elem("2015-Dec-29", 65);
+  Expense_elem e11_1 = Expense_elem(Expense_elem::Datetime(), 1);
+  Expense_elem e11_2 = Expense_elem(Expense_elem::Datetime(), 132);
+  Expense_elem e11_3 = Expense_elem(Expense_elem::Datetime(), 56);
+  Expense_elem e12_1 = Expense_elem(Expense_elem::Datetime(), 463);
+  Expense_elem e12_2 = Expense_elem(Expense_elem::Datetime(), 65);
   cat11->expenses.push_back(e11_1);
   cat11->expenses.push_back(e11_2);
   cat11->expenses.push_back(e11_3);
@@ -194,13 +194,13 @@ TEST_CASE( "GetExpenses", "[internal]" ) {
 }
 
 TEST_CASE( "Expense_elem.toStr", "[internal]" ) {
-  Expense_elem e11_1 = Expense_elem("2015-Jul-01", 1);
-  Expense_elem e11_2 = Expense_elem("2015-Sep-01", 132);
-  Expense_elem e11_3 = Expense_elem("2015-Sep-17", 56);
+  Expense_elem e11_1 = Expense_elem(Expense_elem::Datetime(), 1);
+  Expense_elem e11_2 = Expense_elem(Expense_elem::Datetime(), 132);
+  Expense_elem e11_3 = Expense_elem(Expense_elem::Datetime(), 56);
 
-  CHECK(0 == std::string("2015-Jul-01   1")  .compare(e11_1.toStr()));
-  CHECK(0 == std::string("2015-Sep-01   132").compare(e11_2.toStr()));
-  CHECK(0 == std::string("2015-Sep-17   56") .compare(e11_3.toStr()));
+  CHECK(0 == std::string("2000-Jan-01 00:00   1")  .compare(e11_1.toStr()));
+  CHECK(0 == std::string("2000-Jan-01 00:00   132").compare(e11_2.toStr()));
+  CHECK(0 == std::string("2000-Jan-01 00:00   56") .compare(e11_3.toStr()));
 }
 
 extern std::list<std::string> GetAllExpenses_internal(Categories_elem* categories, const std::string &selectedCategory0);
@@ -217,15 +217,15 @@ TEST_CASE( "GetAllExpenses", "[internal]" ) {
   cat11->subCategories.push_back(cat112);
   cat111->subCategories.push_back(cat1111);
 
-  Expense_elem e1_1 = Expense_elem("DT1.1", 1);
-  Expense_elem e1_2 = Expense_elem("DT1.2", 2);
-  Expense_elem e11_1 = Expense_elem("DT11.1", 3);
-  Expense_elem e11_2 = Expense_elem("DT11.2", 4);
-  Expense_elem e12_1 = Expense_elem("DT12.1", 5);
-  Expense_elem e111_1 = Expense_elem("DT111.1", 6);
-  Expense_elem e112_1 = Expense_elem("DT112.1", 7);
-  Expense_elem e112_2 = Expense_elem("DT112.2", 8);
-  Expense_elem e1111_1 = Expense_elem("DT1111.1", 9);
+  Expense_elem e1_1 = Expense_elem(Expense_elem::Datetime(), 1);
+  Expense_elem e1_2 = Expense_elem(Expense_elem::Datetime(), 2);
+  Expense_elem e11_1 = Expense_elem(Expense_elem::Datetime(), 3);
+  Expense_elem e11_2 = Expense_elem(Expense_elem::Datetime(), 4);
+  Expense_elem e12_1 = Expense_elem(Expense_elem::Datetime(), 5);
+  Expense_elem e111_1 = Expense_elem(Expense_elem::Datetime(), 6);
+  Expense_elem e112_1 = Expense_elem(Expense_elem::Datetime(), 7);
+  Expense_elem e112_2 = Expense_elem(Expense_elem::Datetime(), 8);
+  Expense_elem e1111_1 = Expense_elem(Expense_elem::Datetime(), 9);
 
   category->expenses.push_back(e1_1);
   category->expenses.push_back(e1_2);
@@ -252,4 +252,22 @@ TEST_CASE( "GetAllExpenses", "[internal]" ) {
   REQUIRE(0 == std::string(e112_2.toStr()).compare(*i));
   ++i;
   REQUIRE(i == Expenses.end());
+}
+
+extern void Buy_internal(Categories_elem* categories, const std::string &selectedCategory, const unsigned int &cost);
+TEST_CASE( "Buy.rating", "[internal]" ) {
+  Categories_elem* cat1 = new Categories_elem("Cat1", nullptr, 2);
+  Categories_elem* cat11 = new Categories_elem("Cat11", cat1, 15);
+  Categories_elem* cat111 = new Categories_elem("Cat111", cat11, 4);
+  Categories_elem* cat1111 = new Categories_elem("Cat1111", cat111, 9);
+
+  cat1->subCategories.push_back(cat11);
+  cat11->subCategories.push_back(cat111);
+  cat111->subCategories.push_back(cat1111);
+
+  Buy_internal(cat111, "Cat1111", 7);
+  CHECK( 3 == cat1->rating);
+  CHECK(16 == cat11->rating);
+  CHECK( 5 == cat111->rating);
+  CHECK(10 == cat1111->rating);
 }

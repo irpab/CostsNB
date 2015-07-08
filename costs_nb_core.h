@@ -5,6 +5,8 @@
 #include <string>
 #include <tuple>
 #include <sstream>
+#include <ctime>
+#include <iomanip>
 
 #include "json/json-forwards.h"
 #include "json/json.h"
@@ -21,26 +23,63 @@ namespace workaround // workaround
     }
 }
 
-class Expense_elem
+std::string intMonth2str(unsigned int month);
+
+struct Expense_elem
 {
-public:
-    Expense_elem(std::string datetime0, unsigned int cost0) :
+    struct Datetime
+    {
+        Datetime()
+        {
+            y  = 2000;
+            mn = 1;
+            d  = 1;
+            h  = 0;
+            m  = 0;
+            s  = 0;
+        }
+        Datetime(const struct tm * t)
+        {
+            y = t->tm_year + 1900;
+            mn = t->tm_mon + 1;
+            d = t->tm_mday;
+            h = t->tm_hour;
+            m = t->tm_min;
+            s = t->tm_sec;
+        }
+        std::string toStr() const
+        {
+            std::stringstream ss;
+            ss << y << '-' << intMonth2str(mn) << '-'
+                << std::setw(2) << std::setfill('0') << d
+                << " "<< std::setw(2) << std::setfill('0') << h
+                << ":" << std::setw(2) << std::setfill('0') << m;
+            return ss.str();
+        }
+
+        unsigned short y, mn, d, h, m, s;
+    };
+
+    Expense_elem(const struct tm * datetime0, unsigned int cost0) :
+        datetime(datetime0), cost(cost0)
+    {}
+
+    Expense_elem(const Datetime datetime0, unsigned int cost0) :
         datetime(datetime0), cost(cost0)
     {}
 
     std::string toStr() const
     {
-        return datetime + "   " + workaround::to_string(cost);
+        return datetime.toStr() + "   " + workaround::to_string(cost);
     }
 
-    std::string datetime;
+    Datetime datetime;
     unsigned int cost;
 };
 
 
-class Categories_elem
+struct Categories_elem
 {
-public:
     Categories_elem(const std::string &categoryName0, Categories_elem* parentCategory0) :
         categoryName(categoryName0), rating(0), parentCategory(parentCategory0)
     {

@@ -1,14 +1,53 @@
 #include <fstream>
-#include <iomanip>
-#include <ctime>
+#include <string>
 
 //#include <QDebug>
 
 #include "costs_nb_core.h"
 
+// TODO:
+// -API should return success+result/error+reason values
+// -add _internal functions for all APIs
+
 /////////////////////////////
 // internal functions
 /////////////////////////////
+std::string intMonth2str(const unsigned int month)
+{
+    switch (month) {
+    case  1: return "Jan";
+    case  2: return "Feb";
+    case  3: return "Mar";
+    case  4: return "Apr";
+    case  5: return "May";
+    case  6: return "Jun";
+    case  7: return "Jul";
+    case  8: return "Aug";
+    case  9: return "Sep";
+    case 10: return "Oct";
+    case 11: return "Nov";
+    case 12: return "Dec";
+    default: return "---";
+    }
+}
+
+unsigned int strMonth2int(const std::string &month)
+{
+       if (0 == std::string("Jan").compare(month)) return  1;
+  else if (0 == std::string("Feb").compare(month)) return  2;
+  else if (0 == std::string("Mar").compare(month)) return  3;
+  else if (0 == std::string("Apr").compare(month)) return  4;
+  else if (0 == std::string("May").compare(month)) return  5;
+  else if (0 == std::string("Jun").compare(month)) return  6;
+  else if (0 == std::string("Jul").compare(month)) return  7;
+  else if (0 == std::string("Aug").compare(month)) return  8;
+  else if (0 == std::string("Sep").compare(month)) return  9;
+  else if (0 == std::string("Oct").compare(month)) return 10;
+  else if (0 == std::string("Nov").compare(month)) return 11;
+  else if (0 == std::string("Dec").compare(month)) return 12;
+  return 0;
+}
+
 bool fileExists(const std::string& fileName)
 {
     std::ifstream infile(fileName);
@@ -24,7 +63,33 @@ void Costs_nb_core::Convert_json_to_categories(Categories_elem* parentCategory, 
   Json::Value subCategories = jsonCategories[index]["sub_categories"];
   Categories_elem* newSubCategory = new Categories_elem(currentCat, parentCategory, currentCatRating);
   for (unsigned int i = 0; i < jsonCategories[index]["expenses"].size(); i++) {
-    newSubCategory->expenses.push_back(Expense_elem(jsonCategories[index]["expenses"][i]["datetime"].asString(), jsonCategories[index]["expenses"][i]["cost"].asInt()));
+    Expense_elem::Datetime datetime;
+    Json::Value jsonDatetime = jsonCategories[index]["expenses"][i]["datetime"];
+    if (jsonDatetime.isString()) {
+        // parse string "y-Mn-d h:m" to datetime
+        std::stringstream ss(jsonDatetime.asString());
+        std::string item;
+        std::getline(ss, item, '-');
+//        datetime.y  = std::stoi(item); std::getline(ss, item, '-');
+//        datetime.mn = strMonth2int(item); std::getline(ss, item, ' ');
+//        datetime.d  = std::stoi(item); std::getline(ss, item, ':');
+//        datetime.h  = std::stoi(item); std::getline(ss, item);
+//        datetime.m  = std::stoi(item);
+        std::istringstream(item) >> datetime.y; std::getline(ss, item, '-');
+        datetime.mn = strMonth2int(item); std::getline(ss, item, ' ');
+        std::istringstream(item) >> datetime.d; std::getline(ss, item, ':');
+        std::istringstream(item) >> datetime.h; std::getline(ss, item);
+        std::istringstream(item) >> datetime.m;
+        datetime.s  = 0;
+    } else if (jsonDatetime.isObject()) {
+        datetime.y  = jsonDatetime["y"].asInt();
+        datetime.mn = jsonDatetime["mn"].asInt();
+        datetime.d  = jsonDatetime["d"].asInt();
+        datetime.h  = jsonDatetime["h"].asInt();
+        datetime.m  = jsonDatetime["m"].asInt();
+        datetime.s  = jsonDatetime["s"].asInt();
+    }
+    newSubCategory->expenses.push_back(Expense_elem(datetime, jsonCategories[index]["expenses"][i]["cost"].asInt()));
   }
   parentCategory->subCategories.push_back(newSubCategory);
   Convert_json_to_categories(newSubCategory, 0, subCategories);
@@ -57,7 +122,12 @@ void Costs_nb_core::Convert_categories_to_json(Json::Value &rootJson, const Cate
         unsigned int k = 0;
         rootJson["sub_categories"][j]["expenses"] = Json::Value(Json::arrayValue);
         for (auto expense = (*i)->expenses.begin(); expense != (*i)->expenses.end(); ++expense) {
-            rootJson["sub_categories"][j]["expenses"][k]["datetime"] = expense->datetime;
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["y"]  = expense->datetime.y;
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["mn"] = expense->datetime.mn;
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["d"]  = expense->datetime.d;
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["h"]  = expense->datetime.h;
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["m"]  = expense->datetime.m;
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["s"]  = expense->datetime.s;
             rootJson["sub_categories"][j]["expenses"][k]["cost"] = expense->cost;
             k++;
         }
@@ -200,34 +270,25 @@ std::list<std::string> GetAllExpenses_internal(Categories_elem* categories, cons
     return expensesStr;
 }
 
-std::string intMonth2str(unsigned int month)
+struct tm * now()
 {
-    switch (month) {
-    case  1: return "Jan";
-    case  2: return "Feb";
-    case  3: return "Mar";
-    case  4: return "Apr";
-    case  5: return "May";
-    case  6: return "Jun";
-    case  7: return "Jul";
-    case  8: return "Aug";
-    case  9: return "Sep";
-    case 10: return "Oct";
-    case 11: return "Nov";
-    case 12: return "Dec";
-    default: return "---";
-    }
+    time_t t = time(0);
+    return localtime( & t );
+}
+
+std::string tm2str(const struct tm * t)
+{
+    std::stringstream ss;
+    ss << (t->tm_year + 1900) << '-' << intMonth2str(t->tm_mon + 1) << '-'
+        << std::setw(2) << std::setfill('0') << t->tm_mday
+        << " " << t->tm_hour << ":" << std::setw(2) << std::setfill('0') << t->tm_min;
+    return ss.str();
 }
 
 std::string now2str()
 {
-    time_t t = time(0);
-    struct tm * now = localtime( & t );
-    std::stringstream ss;
-    ss << (now->tm_year + 1900) << '-' << intMonth2str(now->tm_mon + 1) << '-'
-        << std::setw(2) << std::setfill('0') << now->tm_mday
-        << " " << now->tm_hour << ":" << std::setw(2) << std::setfill('0') << now->tm_min;
-    return ss.str();
+    struct tm * t = now();
+    return tm2str(t);
 }
 
 
@@ -243,6 +304,25 @@ Costs_nb_core::~Costs_nb_core()
     while (rootCategory->parentCategory != nullptr)
         rootCategory = rootCategory->parentCategory;
     Write_categories_to_db(rootCategory, dbFileName);
+}
+
+void Buy_internal(Categories_elem* categories, const std::string &selectedCategory, const unsigned int &cost)
+{
+    Categories_elem* category = nullptr;
+    if (selectedCategory.empty())
+        category = categories;
+    else
+        category = GetSubCategoryByName(categories, selectedCategory);
+
+    if (category == nullptr)
+        return;
+
+    category->expenses.push_back(Expense_elem(now(), cost));
+
+    while (category != nullptr) {
+        category->rating++;
+        category = category->parentCategory;
+    }
 }
 
 
@@ -335,20 +415,7 @@ bool Costs_nb_core::RenameCategory(const std::string &oldName, const std::string
 
 void Costs_nb_core::Buy(const std::string &selectedCategory, const unsigned int &cost)
 {
-    Categories_elem* category = nullptr;
-    if (selectedCategory.empty())
-        category = categories;
-    else
-        category = GetSubCategoryByName(categories, selectedCategory);
-
-    if (category == nullptr)
-        return;
-
-    category->rating++;
-    category->expenses.push_back(Expense_elem(now2str(), cost));
-
-    if (category->parentCategory != nullptr)
-        category->parentCategory->subCategories.sort(compare_categories);
+    Buy_internal(categories, selectedCategory, cost);
 }
 
 std::list<std::string> Costs_nb_core::GetExpenses(const std::string &selectedCategory0)
