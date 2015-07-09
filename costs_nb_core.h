@@ -153,7 +153,7 @@ public:
     void CategoryBack();
     bool CategoryAdd(const std::string &newCategory);
     bool CategoryAddSub(const std::string &parentCategory, const std::string &newCategory);
-    void Buy(const std::string &selectedCategory, const unsigned int &cost);
+    void Buy(const std::string &selectedCategory, const unsigned int &cost, const std::string &info);
     std::list<std::string> GetExpenses(const std::string &selectedCategory);
     std::list<std::string> GetAllExpenses(const std::string &selectedCategory);
 };

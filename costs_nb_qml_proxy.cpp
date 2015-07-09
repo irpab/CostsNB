@@ -107,8 +107,8 @@ void Costs_nb_qml_proxy::update_qml_showAllExpensesModel(const QString &selected
     _qmlContext->setContextProperty("showExpensesModel", QVariant::fromValue(stdToQStrList(costs_nb_core->GetAllExpenses(QStr2str(selectedCategory)))));
 }
 
-void Costs_nb_qml_proxy::buy(const QString &selectedCategory, const unsigned int &cost)
+void Costs_nb_qml_proxy::buy(const QString &selectedCategory, const unsigned int &cost, const QString &info)
 {
-    costs_nb_core->Buy(QStr2str(selectedCategory), cost);
+    costs_nb_core->Buy(QStr2str(selectedCategory), cost, QStr2str(info));
     update_qml_categoriesModel();
 }

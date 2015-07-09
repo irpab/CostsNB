@@ -56,7 +56,7 @@ ApplicationWindow {
 
             header: Rectangle {
                 width: view.width
-                height: 120
+                height: 100
                 border {
                     color: "blue"
                     width: 1
@@ -65,7 +65,7 @@ ApplicationWindow {
                 Text {
                     anchors.centerIn: parent
                     renderType: Text.NativeRendering
-                    font.pixelSize: 110
+                    font.pixelSize: 90
                     text: categoriesHeader
                     color: "blue"
                 }
@@ -82,14 +82,14 @@ ApplicationWindow {
             delegate: Item {
                 id: fruitDelegate
                 width: view.width
-                height: 120
+                height: 100
                 Rectangle {
                     anchors.margins: 5
                     anchors.fill: parent
                     Text {
-                        anchors.centerIn: parent
+                        //anchors.centerIn: parent
                         text: modelData
-                        font.pixelSize: 100
+                        font.pixelSize: 85
                     }
                     MouseArea {
                         anchors.fill: parent
@@ -226,20 +226,28 @@ ApplicationWindow {
         title: "Buy"
         standardButtons: StandardButton.Ok | StandardButton.Cancel
 
-        SpinBox {
-            id: buyCost
-            Layout.fillWidth: true
-            menu: null
-            maximumValue: 1000000
-            value: 0
+        ColumnLayout {
+            TextField {
+                id: buyInfoCategory
+                maximumLength: 50
+                placeholderText: qsTr("Enter Optional Info")
+            }
+
+            SpinBox {
+                id: buyCost
+                menu: null
+                maximumValue: 1000000
+                value: 0
+            }
         }
 
         onButtonClicked: {
             Qt.inputMethod.hide();
             if (clickedButton == StandardButton.Ok) {
-                costs_nb_qml_proxy.buy(tapped_category, Math.round(buyCost.value));
+                costs_nb_qml_proxy.buy(tapped_category, Math.round(buyCost.value), buyInfoCategory.text);
             }
             buyCost.value = 0;
+            buyInfoCategory.text = "";
         }
     }
 

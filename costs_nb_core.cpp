@@ -434,9 +434,9 @@ bool Costs_nb_core::RenameCategory(const std::string &oldName, const std::string
     return RenameCategory_internal(categories, oldName, newName);
 }
 
-void Costs_nb_core::Buy(const std::string &selectedCategory, const unsigned int &cost)
+void Costs_nb_core::Buy(const std::string &selectedCategory, const unsigned int &cost, const std::string &info)
 {
-    Buy_internal(categories, selectedCategory, cost);
+    Buy_internal(categories, selectedCategory, cost, info);
 }
 
 std::list<std::string> Costs_nb_core::GetExpenses(const std::string &selectedCategory0)
