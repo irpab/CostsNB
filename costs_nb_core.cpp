@@ -1,5 +1,6 @@
 #include <fstream>
 #include <string>
+#include <iostream>
 
 //#include <QDebug>
 
@@ -48,6 +49,16 @@ unsigned int strMonth2int(const std::string &month)
   return 0;
 }
 
+bool compare_expenses_by_date(const Expense_elem &e1, const Expense_elem &e2)
+{
+    return e1.datetime > e2.datetime;
+}
+
+bool compare_categories_by_rating(const Categories_elem* l, const Categories_elem* r)
+{
+    return l->rating > r->rating;
+}
+
 bool fileExists(const std::string& fileName)
 {
     std::ifstream infile(fileName);
@@ -89,7 +100,14 @@ void Costs_nb_core::Convert_json_to_categories(Categories_elem* parentCategory, 
         datetime.m  = jsonDatetime["m"].asInt();
         datetime.s  = jsonDatetime["s"].asInt();
     }
-    newSubCategory->expenses.push_back(Expense_elem(datetime, jsonCategories[index]["expenses"][i]["cost"].asInt()));
+    Json::Value jsonInfo = jsonCategories[index]["expenses"][i]["info"];
+    std::string info;
+    if (jsonInfo.isNull()) {
+        info = "";
+    } else {
+        info = jsonInfo.asString();
+    }
+    newSubCategory->expenses.push_back(Expense_elem(datetime, jsonCategories[index]["expenses"][i]["cost"].asInt(), info));
   }
   parentCategory->subCategories.push_back(newSubCategory);
   Convert_json_to_categories(newSubCategory, 0, subCategories);
@@ -129,6 +147,7 @@ void Costs_nb_core::Convert_categories_to_json(Json::Value &rootJson, const Cate
             rootJson["sub_categories"][j]["expenses"][k]["datetime"]["m"]  = expense->datetime.m;
             rootJson["sub_categories"][j]["expenses"][k]["datetime"]["s"]  = expense->datetime.s;
             rootJson["sub_categories"][j]["expenses"][k]["cost"] = expense->cost;
+            rootJson["sub_categories"][j]["expenses"][k]["info"] = expense->info;
             k++;
         }
         Json::Value Sub_categories;
@@ -258,11 +277,13 @@ std::list<std::string> GetAllExpenses_internal(Categories_elem* categories, cons
 {
     std::list<std::string> expensesStr;
     std::string selectedCategory = RemoveDisplaySubCategoriesPrefix(selectedCategory0);
+    std::cout << "GetAllExpenses_internal: selectedCategory = " << selectedCategory << std::endl;
 
     Categories_elem* category = GetSubCategoryByName(categories, selectedCategory);
     if (category != nullptr) {
         std::list<Expense_elem> expenses;
         GetAllNestedExpenses(expenses, category);
+        expenses.sort(compare_expenses_by_date);
         for (auto i = expenses.begin(); i != expenses.end(); ++i) {
             expensesStr.push_back(i->toStr());
         }
@@ -306,7 +327,7 @@ Costs_nb_core::~Costs_nb_core()
     Write_categories_to_db(rootCategory, dbFileName);
 }
 
-void Buy_internal(Categories_elem* categories, const std::string &selectedCategory, const unsigned int &cost)
+void Buy_internal(Categories_elem* categories, const std::string &selectedCategory, const unsigned int &cost, const std::string &info)
 {
     Categories_elem* category = nullptr;
     if (selectedCategory.empty())
@@ -317,23 +338,23 @@ void Buy_internal(Categories_elem* categories, const std::string &selectedCatego
     if (category == nullptr)
         return;
 
-    category->expenses.push_back(Expense_elem(now(), cost));
+    category->expenses.push_back(Expense_elem(now(), cost, info));
 
     while (category != nullptr) {
         category->rating++;
+        category->subCategories.sort(compare_categories_by_rating);
         category = category->parentCategory;
     }
 }
 
+void Buy_internal(Categories_elem* categories, const std::string &selectedCategory, const unsigned int &cost)
+{
+    Buy_internal(categories, selectedCategory, cost, "");
+}
 
 /////////////////////////////
 // API
 /////////////////////////////
-bool compare_categories(const Categories_elem* l, const Categories_elem* r)
-{
-    return l->rating > r->rating;
-}
-
 std::tuple<std::list<std::string>, std::string> Costs_nb_core::GetCurrentCategories()
 {
     std::list<std::string> categoriesNames;

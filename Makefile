@@ -12,6 +12,8 @@ core: jsoncpp
 
 ut: core
 	$(CC) $(CFLAGS) $(CC_INCLUDE) jsoncpp.o costs_nb_core.o costs_nb_core_ut.cpp -o ut
+
+run_ut: ut
 	./ut
 
 clean:

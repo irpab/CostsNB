@@ -38,6 +38,10 @@ struct Expense_elem
             m  = 0;
             s  = 0;
         }
+        Datetime(unsigned short y0, unsigned short mn0, unsigned short d0,
+                 unsigned short h0, unsigned short m0, unsigned short s0) :
+            y(y0), mn(mn0), d(d0), h(h0), m(m0), s(s0)
+        {}
         Datetime(const struct tm * t)
         {
             y = t->tm_year + 1900;
@@ -47,6 +51,29 @@ struct Expense_elem
             m = t->tm_min;
             s = t->tm_sec;
         }
+
+        bool operator>(const Datetime &r) const {
+            if (y > r.y) return true;
+            if (y < r.y) return false;
+
+            if (mn > r.mn) return true;
+            if (mn < r.mn) return false;
+
+            if (d > r.d) return true;
+            if (d < r.d) return false;
+
+            if (h > r.h) return true;
+            if (h < r.h) return false;
+
+            if (m > r.m) return true;
+            if (m < r.m) return false;
+
+            if (s > r.s) return true;
+            if (s < r.s) return false;
+
+            return false;
+        }
+
         std::string toStr() const
         {
             std::stringstream ss;
@@ -61,11 +88,19 @@ struct Expense_elem
     };
 
     Expense_elem(const struct tm * datetime0, unsigned int cost0) :
-        datetime(datetime0), cost(cost0)
+        datetime(datetime0), cost(cost0), info("")
     {}
 
     Expense_elem(const Datetime datetime0, unsigned int cost0) :
-        datetime(datetime0), cost(cost0)
+        datetime(datetime0), cost(cost0), info("")
+    {}
+
+    Expense_elem(const Datetime datetime0, unsigned int cost0, const std::string &info0) :
+        datetime(datetime0), cost(cost0), info(info0)
+    {}
+
+    Expense_elem(const struct tm * datetime0, unsigned int cost0, const std::string &info0) :
+        datetime(datetime0), cost(cost0), info(info0)
     {}
 
     std::string toStr() const
@@ -75,6 +110,7 @@ struct Expense_elem
 
     Datetime datetime;
     unsigned int cost;
+    std::string info;
 };
 
 

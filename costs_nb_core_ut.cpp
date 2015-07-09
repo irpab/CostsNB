@@ -120,6 +120,23 @@ TEST_CASE( "intMonth2str", "[internal]" ) {
   CHECK(0 == std::string("---").compare(intMonth2str( 0)));
 }
 
+extern unsigned int strMonth2int(const std::string &month);
+TEST_CASE( "strMonth2int", "[internal]" ) {
+  CHECK(strMonth2int("xxx") ==  0);
+  CHECK(strMonth2int("Jan") ==  1);
+  CHECK(strMonth2int("Feb") ==  2);
+  CHECK(strMonth2int("Mar") ==  3);
+  CHECK(strMonth2int("Apr") ==  4);
+  CHECK(strMonth2int("May") ==  5);
+  CHECK(strMonth2int("Jun") ==  6);
+  CHECK(strMonth2int("Jul") ==  7);
+  CHECK(strMonth2int("Aug") ==  8);
+  CHECK(strMonth2int("Sep") ==  9);
+  CHECK(strMonth2int("Oct") == 10);
+  CHECK(strMonth2int("Nov") == 11);
+  CHECK(strMonth2int("Dec") == 12);
+}
+
 extern bool RenameCategory_internal(Categories_elem* categories, const std::string &oldName0, const std::string &newName);
 TEST_CASE( "RenameCategory", "[internal]" ) {
   Categories_elem* category = new Categories_elem("Cat1", nullptr);
@@ -203,6 +220,24 @@ TEST_CASE( "Expense_elem.toStr", "[internal]" ) {
   CHECK(0 == std::string("2000-Jan-01 00:00   56") .compare(e11_3.toStr()));
 }
 
+TEST_CASE( "Datetime.operator>", "[internal]" ) {
+  CHECK(!(Expense_elem::Datetime(1, 1, 1, 1, 1, 1) > Expense_elem::Datetime(1, 1, 1, 1, 1, 1)) );
+
+  CHECK(!(Expense_elem::Datetime(1, 1, 1, 1, 1, 1) > Expense_elem::Datetime(2, 1, 1, 1, 1, 1)) );
+  CHECK(!(Expense_elem::Datetime(1, 1, 1, 1, 1, 1) > Expense_elem::Datetime(1, 2, 1, 1, 1, 1)) );
+  CHECK(!(Expense_elem::Datetime(1, 1, 1, 1, 1, 1) > Expense_elem::Datetime(1, 1, 2, 1, 1, 1)) );
+  CHECK(!(Expense_elem::Datetime(1, 1, 1, 1, 1, 1) > Expense_elem::Datetime(1, 1, 1, 2, 1, 1)) );
+  CHECK(!(Expense_elem::Datetime(1, 1, 1, 1, 1, 1) > Expense_elem::Datetime(1, 1, 1, 1, 2, 1)) );
+  CHECK(!(Expense_elem::Datetime(1, 1, 1, 1, 1, 1) > Expense_elem::Datetime(1, 1, 1, 1, 1, 2)) );
+
+  CHECK( (Expense_elem::Datetime(2, 1, 1, 1, 1, 1) > Expense_elem::Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK( (Expense_elem::Datetime(1, 2, 1, 1, 1, 1) > Expense_elem::Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK( (Expense_elem::Datetime(1, 1, 2, 1, 1, 1) > Expense_elem::Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK( (Expense_elem::Datetime(1, 1, 1, 2, 1, 1) > Expense_elem::Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK( (Expense_elem::Datetime(1, 1, 1, 1, 2, 1) > Expense_elem::Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK( (Expense_elem::Datetime(1, 1, 1, 1, 1, 2) > Expense_elem::Datetime(1, 1, 1, 1, 1, 1)) );
+}
+
 extern std::list<std::string> GetAllExpenses_internal(Categories_elem* categories, const std::string &selectedCategory0);
 TEST_CASE( "GetAllExpenses", "[internal]" ) {
   Categories_elem* category = new Categories_elem("Cat1", nullptr);
@@ -217,15 +252,15 @@ TEST_CASE( "GetAllExpenses", "[internal]" ) {
   cat11->subCategories.push_back(cat112);
   cat111->subCategories.push_back(cat1111);
 
-  Expense_elem e1_1 = Expense_elem(Expense_elem::Datetime(), 1);
-  Expense_elem e1_2 = Expense_elem(Expense_elem::Datetime(), 2);
-  Expense_elem e11_1 = Expense_elem(Expense_elem::Datetime(), 3);
-  Expense_elem e11_2 = Expense_elem(Expense_elem::Datetime(), 4);
-  Expense_elem e12_1 = Expense_elem(Expense_elem::Datetime(), 5);
-  Expense_elem e111_1 = Expense_elem(Expense_elem::Datetime(), 6);
-  Expense_elem e112_1 = Expense_elem(Expense_elem::Datetime(), 7);
-  Expense_elem e112_2 = Expense_elem(Expense_elem::Datetime(), 8);
-  Expense_elem e1111_1 = Expense_elem(Expense_elem::Datetime(), 9);
+  Expense_elem e1_1    = Expense_elem(Expense_elem::Datetime(2015,  1, 11,  1, 21, 0), 1);
+  Expense_elem e1_2    = Expense_elem(Expense_elem::Datetime(2015,  7,  5,  6, 19, 0), 2);
+  Expense_elem e11_1   = Expense_elem(Expense_elem::Datetime(2014,  2, 21, 13, 34, 0), 3);
+  Expense_elem e11_2   = Expense_elem(Expense_elem::Datetime(2015,  1,  4,  3, 35, 0), 4);
+  Expense_elem e12_1   = Expense_elem(Expense_elem::Datetime(2015,  4,  1,  9, 13, 0), 5);
+  Expense_elem e111_1  = Expense_elem(Expense_elem::Datetime(2017,  4,  6,  7, 56, 0), 6);
+  Expense_elem e112_1  = Expense_elem(Expense_elem::Datetime(2015,  1,  1,  1,  7, 0), 7);
+  Expense_elem e112_2  = Expense_elem(Expense_elem::Datetime(2017,  9, 27, 21,  1, 0), 8);
+  Expense_elem e1111_1 = Expense_elem(Expense_elem::Datetime(2015, 12,  1, 23,  2, 0), 9);
 
   category->expenses.push_back(e1_1);
   category->expenses.push_back(e1_2);
@@ -239,17 +274,17 @@ TEST_CASE( "GetAllExpenses", "[internal]" ) {
 
   auto Expenses = GetAllExpenses_internal(category, "Cat11");
   auto i = Expenses.begin();
-  REQUIRE(0 == std::string(e11_1.toStr()).compare(*i));
-  ++i;
-  REQUIRE(0 == std::string(e11_2.toStr()).compare(*i));
+  REQUIRE(0 == std::string(e112_2.toStr()).compare(*i));
   ++i;
   REQUIRE(0 == std::string(e111_1.toStr()).compare(*i));
   ++i;
   REQUIRE(0 == std::string(e1111_1.toStr()).compare(*i));
   ++i;
+  REQUIRE(0 == std::string(e11_2.toStr()).compare(*i));
+  ++i;
   REQUIRE(0 == std::string(e112_1.toStr()).compare(*i));
   ++i;
-  REQUIRE(0 == std::string(e112_2.toStr()).compare(*i));
+  REQUIRE(0 == std::string(e11_1.toStr()).compare(*i));
   ++i;
   REQUIRE(i == Expenses.end());
 }
