@@ -137,13 +137,15 @@ class Costs_nb_core
 {
     Categories_elem *categories;
     std::string dbFileName;
+    std::string cfgFileName;
 
     Categories_elem* Read_categories_from_db(const std::string &dbFile);
     void Convert_json_to_categories(Categories_elem* parentCategory, const unsigned int &index, const Json::Value &jsonCategories);
     void Convert_categories_to_json(Json::Value &rootJson, const Categories_elem* categories);
     void Write_categories_to_db(const Categories_elem* rootCategory, const std::string &dbFileName);
+    void Sync_db_with_server();
 public:
-    Costs_nb_core(const std::string &dbFile);
+    Costs_nb_core(const std::string &dbFileName, const std::string &cfgFileName);
     ~Costs_nb_core();
 
     std::tuple<std::list<std::string>, std::string> GetCurrentCategories();

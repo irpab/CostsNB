@@ -20,12 +20,13 @@ QStringList stdToQStrList(std::list<std::string> stdStrList)
 #define REAL_DB_NAME "costs_nb_db.json"
 #define TEST_DB_NAME "test_db.json"
 #define COSTS_NB_DB_NAME REAL_DB_NAME
+#define COSTS_NB_CFG_NAME "costs_nb.cfg"
 
 Costs_nb_qml_proxy::Costs_nb_qml_proxy(QQmlContext *qmlContext)
     : _qmlContext(qmlContext)
 {
     QString dbLocation = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
-    costs_nb_core = new Costs_nb_core(QStr2str(dbLocation + "/" + COSTS_NB_DB_NAME));
+    costs_nb_core = new Costs_nb_core(QStr2str(dbLocation + "/" + COSTS_NB_DB_NAME), QStr2str(dbLocation + "/" + COSTS_NB_CFG_NAME));
     update_qml_categoriesModel();
     update_qml_showExpensesModel("");
 }

@@ -5,10 +5,11 @@
 //#include <QDebug>
 
 #include "costs_nb_core.h"
+#include "costsnb_tcp_transport.h"
 
 // TODO:
 // -API should return success+result/error+reason values
-// -add _internal functions for all APIs
+// -add _internal functions for all APIs to cover with UT
 
 /////////////////////////////
 // internal functions
@@ -47,6 +48,12 @@ unsigned int strMonth2int(const std::string &month)
   else if (0 == std::string("Nov").compare(month)) return 11;
   else if (0 == std::string("Dec").compare(month)) return 12;
   return 0;
+}
+
+struct tm * now()
+{
+    time_t t = time(0);
+    return localtime( & t );
 }
 
 bool compare_expenses_by_date(const Expense_elem &e1, const Expense_elem &e2)
@@ -122,6 +129,7 @@ Categories_elem* Costs_nb_core::Read_categories_from_db(const std::string &dbFil
     if (fileExists(dbFile)) {
         std::ifstream dbFileStream(dbFile, std::ifstream::binary);
         dbFileStream >> rootJson;
+        dbFileStream.close();
 
         std::string dbVersion = rootJson["version"].asString();
         Convert_json_to_categories(rootCategory, 0, rootJson["sub_categories"]);
@@ -168,6 +176,54 @@ void Costs_nb_core::Write_categories_to_db(const Categories_elem* rootCategory, 
     Convert_categories_to_json(rootJson, rootCategory);
     dbFile << rootJson << std::endl;
     dbFile.close();
+}
+
+void Costs_nb_core::Sync_db_with_server()
+{
+    // read config and get server ip, port, last sync time
+    if (!fileExists(cfgFileName))
+        return;
+
+    std::ifstream cfgFileStream(cfgFileName, std::ifstream::binary);
+    std::string ip;
+    std::string portStr;
+    int port;
+    std::string last_time;
+    cfgFileStream >> ip;
+    cfgFileStream >> portStr;
+    std::istringstream(portStr) >> port;
+    cfgFileStream >> last_time;
+    cfgFileStream.close();
+
+    struct tm * t = now();
+    std::stringstream ss;
+    ss << t->tm_mday;
+
+    if (!last_time.empty() && !last_time.compare(ss.str()))
+        return;
+
+    // try to establish connection and do handshake
+    try {
+      CostsNBTcpTransport tcpTransport(ip, port);
+      Handshake(tcpTransport);
+  
+      // convert categories to json and send them to server
+      Json::Value rootJson;
+      rootJson["version"] = SUPPORTED_DB_VERSION;
+      Convert_categories_to_json(rootJson, categories);
+
+      // update last sync time
+      std::ofstream cfgFileStreamOut;
+      cfgFileStreamOut.open(cfgFileName);
+      cfgFileStreamOut << ip << std::endl;
+      cfgFileStreamOut << port << std::endl;
+      cfgFileStreamOut << t->tm_mday << std::endl;
+      cfgFileStreamOut.close();
+
+      Send_string(tcpTransport, rootJson.toStyledString());
+    }
+    catch (std::exception &e) {
+    }
 }
 
 bool ValidateCategoryName(const std::string &newCategory)
@@ -291,12 +347,6 @@ std::list<std::string> GetAllExpenses_internal(Categories_elem* categories, cons
     return expensesStr;
 }
 
-struct tm * now()
-{
-    time_t t = time(0);
-    return localtime( & t );
-}
-
 std::string tm2str(const struct tm * t)
 {
     std::stringstream ss;
@@ -313,10 +363,12 @@ std::string now2str()
 }
 
 
-Costs_nb_core::Costs_nb_core(const std::string &dbFileName0)
+Costs_nb_core::Costs_nb_core(const std::string &dbFileName0, const std::string &cfgFileName0)
 {
     dbFileName = dbFileName0;
+    cfgFileName = cfgFileName0;
     categories = Read_categories_from_db(dbFileName);
+    Sync_db_with_server();
 }
 
 Costs_nb_core::~Costs_nb_core()

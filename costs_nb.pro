@@ -5,7 +5,10 @@ QT += qml quick widgets
 SOURCES += main.cpp \
     costs_nb_qml_proxy.cpp \
     costs_nb_core.cpp \
-    jsoncpp.cpp
+    jsoncpp.cpp \
+    costsnb_tcp_transport.cpp \
+    costsnb_clisrv_encoder.cpp \
+    costsnb_clisrv_decoder.cpp
 
 RESOURCES += qml.qrc
 
@@ -19,7 +22,11 @@ HEADERS += \
     costs_nb_qml_proxy.h \
     costs_nb_core.h \
     json/json.h \
-    json/json-forwards.h
+    json/json-forwards.h \
+    costsnb_clisrv_encoder.h \
+    costsnb_clisrv_opcodes.h \
+    costsnb_clisrv_structs.h \
+    costsnb_tcp_transport.h
 
 DISTFILES += \
     android/AndroidManifest.xml \
