@@ -8,7 +8,8 @@ SOURCES += main.cpp \
     jsoncpp.cpp \
     costsnb_tcp_transport.cpp \
     costsnb_clisrv_encoder.cpp \
-    costsnb_clisrv_decoder.cpp
+    costsnb_clisrv_decoder.cpp \
+    utils.cpp
 
 RESOURCES += qml.qrc
 
@@ -26,7 +27,8 @@ HEADERS += \
     costsnb_clisrv_encoder.h \
     costsnb_clisrv_opcodes.h \
     costsnb_clisrv_structs.h \
-    costsnb_tcp_transport.h
+    costsnb_tcp_transport.h \
+    utils.h
 
 DISTFILES += \
     android/AndroidManifest.xml \

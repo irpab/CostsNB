@@ -7,143 +7,56 @@
 #include "costs_nb_core.h"
 #include "costsnb_tcp_transport.h"
 
-// TODO:
-// -API should return success+result/error+reason values
-// -add _internal functions for all APIs to cover with UT
-
-/////////////////////////////
-// internal functions
-/////////////////////////////
-std::string intMonth2str(const unsigned int month)
-{
-    switch (month) {
-    case  1: return "Jan";
-    case  2: return "Feb";
-    case  3: return "Mar";
-    case  4: return "Apr";
-    case  5: return "May";
-    case  6: return "Jun";
-    case  7: return "Jul";
-    case  8: return "Aug";
-    case  9: return "Sep";
-    case 10: return "Oct";
-    case 11: return "Nov";
-    case 12: return "Dec";
-    default: return "---";
-    }
-}
-
-unsigned int strMonth2int(const std::string &month)
-{
-       if (0 == std::string("Jan").compare(month)) return  1;
-  else if (0 == std::string("Feb").compare(month)) return  2;
-  else if (0 == std::string("Mar").compare(month)) return  3;
-  else if (0 == std::string("Apr").compare(month)) return  4;
-  else if (0 == std::string("May").compare(month)) return  5;
-  else if (0 == std::string("Jun").compare(month)) return  6;
-  else if (0 == std::string("Jul").compare(month)) return  7;
-  else if (0 == std::string("Aug").compare(month)) return  8;
-  else if (0 == std::string("Sep").compare(month)) return  9;
-  else if (0 == std::string("Oct").compare(month)) return 10;
-  else if (0 == std::string("Nov").compare(month)) return 11;
-  else if (0 == std::string("Dec").compare(month)) return 12;
-  return 0;
-}
-
-struct tm * now()
-{
-    time_t t = time(0);
-    return localtime( & t );
-}
-
-bool compare_expenses_by_date(const Expense_elem &e1, const Expense_elem &e2)
-{
-    return e1.datetime > e2.datetime;
-}
-
-bool compare_categories_by_rating(const Categories_elem* l, const Categories_elem* r)
-{
-    return l->rating > r->rating;
-}
-
-bool fileExists(const std::string& fileName)
-{
-    std::ifstream infile(fileName);
-    return infile.good();
-}
-
-void Costs_nb_core::Convert_json_to_categories(Categories_elem* parentCategory, const unsigned int &index, const Json::Value &jsonCategories)
+//////// TODO: refactor all below
+void CostsNbCore::ConvertJsonToCategories(CategoriesElem* parent_category, const unsigned int &index, const Json::Value &jsonCategories)
 {
   if (index == jsonCategories.size())
     return;
   std::string currentCat = jsonCategories[index]["name"].asString();
   unsigned int currentCatRating = jsonCategories[index]["rating"].asInt();
   Json::Value subCategories = jsonCategories[index]["sub_categories"];
-  Categories_elem* newSubCategory = new Categories_elem(currentCat, parentCategory, currentCatRating);
+  CategoriesElem* newSubCategory = new CategoriesElem(currentCat, parent_category, currentCatRating);
   for (unsigned int i = 0; i < jsonCategories[index]["expenses"].size(); i++) {
-    Expense_elem::Datetime datetime;
+    ExpenseElem::Datetime datetime;
     Json::Value jsonDatetime = jsonCategories[index]["expenses"][i]["datetime"];
-    if (jsonDatetime.isString()) {
-        // parse string "y-Mn-d h:m" to datetime
-        std::stringstream ss(jsonDatetime.asString());
-        std::string item;
-        std::getline(ss, item, '-');
-//        datetime.y  = std::stoi(item); std::getline(ss, item, '-');
-//        datetime.mn = strMonth2int(item); std::getline(ss, item, ' ');
-//        datetime.d  = std::stoi(item); std::getline(ss, item, ':');
-//        datetime.h  = std::stoi(item); std::getline(ss, item);
-//        datetime.m  = std::stoi(item);
-        std::istringstream(item) >> datetime.y; std::getline(ss, item, '-');
-        datetime.mn = strMonth2int(item); std::getline(ss, item, ' ');
-        std::istringstream(item) >> datetime.d; std::getline(ss, item, ':');
-        std::istringstream(item) >> datetime.h; std::getline(ss, item);
-        std::istringstream(item) >> datetime.m;
-        datetime.s  = 0;
-    } else if (jsonDatetime.isObject()) {
-        datetime.y  = jsonDatetime["y"].asInt();
-        datetime.mn = jsonDatetime["mn"].asInt();
-        datetime.d  = jsonDatetime["d"].asInt();
-        datetime.h  = jsonDatetime["h"].asInt();
-        datetime.m  = jsonDatetime["m"].asInt();
-        datetime.s  = jsonDatetime["s"].asInt();
-    }
+    datetime.y  = jsonDatetime["y"].asInt();
+    datetime.mn = jsonDatetime["mn"].asInt();
+    datetime.d  = jsonDatetime["d"].asInt();
+    datetime.h  = jsonDatetime["h"].asInt();
+    datetime.m  = jsonDatetime["m"].asInt();
+    datetime.s  = jsonDatetime["s"].asInt();
     Json::Value jsonInfo = jsonCategories[index]["expenses"][i]["info"];
-    std::string info;
-    if (jsonInfo.isNull()) {
-        info = "";
-    } else {
-        info = jsonInfo.asString();
-    }
-    newSubCategory->expenses.push_back(Expense_elem(datetime, jsonCategories[index]["expenses"][i]["cost"].asInt(), info));
+    std::string info = jsonInfo.asString();
+    newSubCategory->expenses.push_back(ExpenseElem(datetime, jsonCategories[index]["expenses"][i]["cost"].asInt(), info));
   }
-  parentCategory->subCategories.push_back(newSubCategory);
-  Convert_json_to_categories(newSubCategory, 0, subCategories);
-  Convert_json_to_categories(parentCategory, index+1, jsonCategories);
+  parent_category->sub_categories.push_back(newSubCategory);
+  ConvertJsonToCategories(newSubCategory, 0, subCategories);
+  ConvertJsonToCategories(parent_category, index+1, jsonCategories);
 }
 
-Categories_elem* Costs_nb_core::Read_categories_from_db(const std::string &dbFile)
+CategoriesElem* CostsNbCore::ReadCategoriesFromDb(const std::string &dbFile)
 {
-    Categories_elem* rootCategory = new Categories_elem("Root Category", nullptr);
+    CategoriesElem* rootCategory = new CategoriesElem("Root Category", nullptr);
     Json::Value rootJson;
 
-    if (fileExists(dbFile)) {
+    if (utils::FileExists(dbFile)) {
         std::ifstream dbFileStream(dbFile, std::ifstream::binary);
         dbFileStream >> rootJson;
         dbFileStream.close();
 
         std::string dbVersion = rootJson["version"].asString();
-        Convert_json_to_categories(rootCategory, 0, rootJson["sub_categories"]);
+        ConvertJsonToCategories(rootCategory, 0, rootJson["sub_categories"]);
     }
 
     return rootCategory;
 }
 
-void Costs_nb_core::Convert_categories_to_json(Json::Value &rootJson, const Categories_elem* categories)
+void CostsNbCore::ConvertCategoriesToJson(Json::Value &rootJson, const CategoriesElem* categories)
 {
     unsigned int j = 0;
-    for (auto i = categories->subCategories.begin();
-            i != categories->subCategories.end(); ++i, ++j) {
-        rootJson["sub_categories"][j]["name"] = (*i)->categoryName;
+    for (auto i = categories->sub_categories.begin();
+            i != categories->sub_categories.end(); ++i, ++j) {
+        rootJson["sub_categories"][j]["name"] = (*i)->category_name;
         rootJson["sub_categories"][j]["rating"] = (*i)->rating;
         unsigned int k = 0;
         rootJson["sub_categories"][j]["expenses"] = Json::Value(Json::arrayValue);
@@ -159,7 +72,7 @@ void Costs_nb_core::Convert_categories_to_json(Json::Value &rootJson, const Cate
             k++;
         }
         Json::Value Sub_categories;
-        Convert_categories_to_json(Sub_categories, *i);
+        ConvertCategoriesToJson(Sub_categories, *i);
         if (Sub_categories.isNull())
             rootJson["sub_categories"][j]["sub_categories"] = Json::Value(Json::arrayValue);
         else
@@ -167,24 +80,24 @@ void Costs_nb_core::Convert_categories_to_json(Json::Value &rootJson, const Cate
     }
 }
 
-void Costs_nb_core::Write_categories_to_db(const Categories_elem* rootCategory, const std::string &dbFileName)
+void CostsNbCore::WriteCategoriesToDb(const CategoriesElem* rootCategory, const std::string &dbFileName)
 {
     std::ofstream dbFile;
     dbFile.open(dbFileName);
     Json::Value rootJson;
     rootJson["version"] = SUPPORTED_DB_VERSION;
-    Convert_categories_to_json(rootJson, rootCategory);
+    ConvertCategoriesToJson(rootJson, rootCategory);
     dbFile << rootJson << std::endl;
     dbFile.close();
 }
 
-void Costs_nb_core::Sync_db_with_server()
+void CostsNbCore::SyncDbWithServer()
 {
     // read config and get server ip, port, last sync time
-    if (!fileExists(cfgFileName))
+    if (!utils::FileExists(cfg_file_name))
         return;
 
-    std::ifstream cfgFileStream(cfgFileName, std::ifstream::binary);
+    std::ifstream cfgFileStream(cfg_file_name, std::ifstream::binary);
     std::string ip;
     std::string portStr;
     int port;
@@ -195,7 +108,7 @@ void Costs_nb_core::Sync_db_with_server()
     cfgFileStream >> last_time;
     cfgFileStream.close();
 
-    struct tm * t = now();
+    struct tm * t = utils::Now();
     std::stringstream ss;
     ss << t->tm_mday;
 
@@ -210,11 +123,11 @@ void Costs_nb_core::Sync_db_with_server()
       // convert categories to json and send them to server
       Json::Value rootJson;
       rootJson["version"] = SUPPORTED_DB_VERSION;
-      Convert_categories_to_json(rootJson, categories);
+      ConvertCategoriesToJson(rootJson, categories);
 
       // update last sync time
       std::ofstream cfgFileStreamOut;
-      cfgFileStreamOut.open(cfgFileName);
+      cfgFileStreamOut.open(cfg_file_name);
       cfgFileStreamOut << ip << std::endl;
       cfgFileStreamOut << port << std::endl;
       cfgFileStreamOut << t->tm_mday << std::endl;
@@ -226,18 +139,30 @@ void Costs_nb_core::Sync_db_with_server()
     }
 }
 
-bool ValidateCategoryName(const std::string &newCategory)
+//////// TODO: refactor all above
+
+bool CompareExpensesByDate(const ExpenseElem &e1, const ExpenseElem &e2)
 {
-    if (newCategory.size() == 0)
+    return e1.datetime > e2.datetime;
+}
+
+bool CompareCategoriesByRating(const CategoriesElem* e1, const CategoriesElem* e2)
+{
+    return e1->rating > e2->rating;
+}
+
+bool ValidateCategoryName(const std::string &category_name)
+{
+    if (category_name.size() == 0)
         return false;
     return true;
 }
 
-bool SubCategoriesContainCategory(const Categories_elem* categories, const std::string &categoryName)
+bool SubCategoriesContainCategory(const CategoriesElem* categories, const std::string &category_name)
 {
-    for (auto i = categories->subCategories.begin(); i != categories->subCategories.end(); ++i)
+    for (auto category = categories->sub_categories.begin(); category != categories->sub_categories.end(); ++category)
     {
-        if (0 == (*i)->categoryName.compare(categoryName))
+        if (0 == (*category)->category_name.compare(category_name))
         {
             return true;
         }
@@ -245,258 +170,237 @@ bool SubCategoriesContainCategory(const Categories_elem* categories, const std::
     return false;
 }
 
-std::string AddDisplaySubCategoriesPrefix(const Categories_elem* category)
+// TODO: avoid text prefixes, use objects
+std::string AddDisplaySubCategoriesPrefix(const CategoriesElem* category)
 {
-    std::string hasSubcategoriesPrefix;
-    if (category->subCategories.empty())
-        hasSubcategoriesPrefix = "";
+    std::string has_subcategories_prefix;
+    if (category->sub_categories.empty())
+        has_subcategories_prefix = "";
     else
-        hasSubcategoriesPrefix = "> ";
-    return hasSubcategoriesPrefix + category->categoryName;
+        has_subcategories_prefix = "> ";
+    return has_subcategories_prefix + category->category_name;
 }
 
-std::string RemoveDisplaySubCategoriesPrefix(const std::string categoryName)
+std::string RemoveDisplaySubCategoriesPrefix(const std::string category_name)
 {
-    if (categoryName.length() > 2 && !categoryName.compare(0,2,"> "))
-        return categoryName.substr(2);
-    else
-        return categoryName;
+    if (category_name.length() > 2 && !category_name.compare(0,2,"> "))
+        return category_name.substr(2);
+    return category_name;
 }
 
-Categories_elem* GetSubCategoryByName(const Categories_elem* category, const std::string &categoryName)
+CategoriesElem* GetSubCategoryByName(const CategoriesElem* category, const std::string &category_name)
 {
-    for (auto i = category->subCategories.begin(); i != category->subCategories.end(); ++i)
+    for (auto sub_category = category->sub_categories.begin(); sub_category != category->sub_categories.end(); ++sub_category)
     {
-        if (0 == (*i)->categoryName.compare(categoryName))
+        if (0 == (*sub_category)->category_name.compare(category_name))
         {
-            return *i;
+            return *sub_category;
         }
     }
     return nullptr;
 }
 
-bool AddSubCategory(Categories_elem* category, const std::string &newCategoryName)
+bool AddSubCategory(CategoriesElem* category, const std::string &new_category_name)
 {
-    if (!ValidateCategoryName(newCategoryName))
+    if (!ValidateCategoryName(new_category_name))
         return false;
 
-    if (SubCategoriesContainCategory(category, newCategoryName))
+    if (SubCategoriesContainCategory(category, new_category_name))
         return false;
 
-    category->subCategories.push_back(new Categories_elem(newCategoryName, category));
+    category->sub_categories.push_back(new CategoriesElem(new_category_name, category));
     return true;
 }
 
-void GetAllNestedExpenses(std::list<Expense_elem> &expenses, const Categories_elem* category)
+void GetAllNestedExpenses(std::list<ExpenseElem> &expenses, const CategoriesElem* category)
 {
-    for (auto i = category->expenses.begin(); i != category->expenses.end(); ++i) {
-        expenses.push_back(*i);
+    for (auto expense = category->expenses.begin(); expense != category->expenses.end(); ++expense) {
+        expenses.push_back(*expense);
     }
-    for (auto i = category->subCategories.begin(); i != category->subCategories.end(); ++i) {
-        GetAllNestedExpenses(expenses, *i);
+    for (auto sub_category = category->sub_categories.begin(); sub_category != category->sub_categories.end(); ++sub_category) {
+        GetAllNestedExpenses(expenses, *sub_category);
     }
 }
 
-bool RenameCategory_internal(Categories_elem* categories, const std::string &oldName0, const std::string &newName)
+bool RenameCategory(CategoriesElem* categories, const std::string &old_name_, const std::string &new_name)
 {
-    std::string oldName = RemoveDisplaySubCategoriesPrefix(oldName0);
+    std::string old_name = RemoveDisplaySubCategoriesPrefix(old_name_);
 
-    if (!ValidateCategoryName(newName))
+    if (!ValidateCategoryName(new_name))
         return false;
 
-    Categories_elem* category = GetSubCategoryByName(categories, oldName);
+    CategoriesElem* category = GetSubCategoryByName(categories, old_name);
     if (category == nullptr)
         return false;
 
-    if (SubCategoriesContainCategory(categories, newName))
+    if (SubCategoriesContainCategory(categories, new_name))
         return false;
 
-    category->categoryName = newName;
+    category->category_name = new_name;
     return true;
 }
 
-std::list<std::string> GetExpenses_internal(Categories_elem* categories, const std::string &selectedCategory0)
+std::list<std::string> GetExpenses(CategoriesElem* categories, const std::string &selected_category_)
 {
     std::list<std::string> expenses;
-    std::string selectedCategory = RemoveDisplaySubCategoriesPrefix(selectedCategory0);
+    std::string selected_category = RemoveDisplaySubCategoriesPrefix(selected_category_);
 
-    Categories_elem* category = GetSubCategoryByName(categories, selectedCategory);
+    CategoriesElem* category = GetSubCategoryByName(categories, selected_category);
     if (category != nullptr) {
-        for (auto i = category->expenses.begin(); i != category->expenses.end(); ++i) {
-            expenses.push_back(i->toStr());
+        for (auto expense = category->expenses.begin(); expense != category->expenses.end(); ++expense) {
+            expenses.push_back(expense->ToStr());
         }
     }
     return expenses;
 }
 
-std::list<std::string> GetAllExpenses_internal(Categories_elem* categories, const std::string &selectedCategory0)
+std::list<std::string> GetAllExpenses(CategoriesElem* categories, const std::string &selected_category_)
 {
-    std::list<std::string> expensesStr;
-    std::string selectedCategory = RemoveDisplaySubCategoriesPrefix(selectedCategory0);
-    std::cout << "GetAllExpenses_internal: selectedCategory = " << selectedCategory << std::endl;
+    std::list<std::string> expenses_str;
+    std::string selected_category = RemoveDisplaySubCategoriesPrefix(selected_category_);
 
-    Categories_elem* category = GetSubCategoryByName(categories, selectedCategory);
+    CategoriesElem* category = GetSubCategoryByName(categories, selected_category);
     if (category != nullptr) {
-        std::list<Expense_elem> expenses;
+        std::list<ExpenseElem> expenses;
         GetAllNestedExpenses(expenses, category);
-        expenses.sort(compare_expenses_by_date);
-        for (auto i = expenses.begin(); i != expenses.end(); ++i) {
-            expensesStr.push_back(i->toStr());
+        expenses.sort(CompareExpensesByDate);
+        for (auto expense = expenses.begin(); expense != expenses.end(); ++expense) {
+            expenses_str.push_back(expense->ToStr());
         }
     }
-    return expensesStr;
+    return expenses_str;
 }
 
-std::string tm2str(const struct tm * t)
+void Buy(CategoriesElem* categories, const std::string &selected_category, const unsigned int cost, const std::string &info)
 {
-    std::stringstream ss;
-    ss << (t->tm_year + 1900) << '-' << intMonth2str(t->tm_mon + 1) << '-'
-        << std::setw(2) << std::setfill('0') << t->tm_mday
-        << " " << t->tm_hour << ":" << std::setw(2) << std::setfill('0') << t->tm_min;
-    return ss.str();
-}
-
-std::string now2str()
-{
-    struct tm * t = now();
-    return tm2str(t);
-}
-
-
-Costs_nb_core::Costs_nb_core(const std::string &dbFileName0, const std::string &cfgFileName0)
-{
-    dbFileName = dbFileName0;
-    cfgFileName = cfgFileName0;
-    categories = Read_categories_from_db(dbFileName);
-    Sync_db_with_server();
-}
-
-Costs_nb_core::~Costs_nb_core()
-{
-    Categories_elem* rootCategory = categories;
-    while (rootCategory->parentCategory != nullptr)
-        rootCategory = rootCategory->parentCategory;
-    Write_categories_to_db(rootCategory, dbFileName);
-}
-
-void Buy_internal(Categories_elem* categories, const std::string &selectedCategory, const unsigned int &cost, const std::string &info)
-{
-    Categories_elem* category = nullptr;
-    if (selectedCategory.empty())
+    CategoriesElem* category = nullptr;
+    if (selected_category.empty())
         category = categories;
     else
-        category = GetSubCategoryByName(categories, selectedCategory);
+        category = GetSubCategoryByName(categories, selected_category);
 
     if (category == nullptr)
         return;
 
-    category->expenses.push_back(Expense_elem(now(), cost, info));
+    category->expenses.push_back(ExpenseElem(utils::Now(), cost, info));
 
     while (category != nullptr) {
         category->rating++;
-        category->subCategories.sort(compare_categories_by_rating);
-        category = category->parentCategory;
+        category->sub_categories.sort(CompareCategoriesByRating);
+        category = category->parent_category;
     }
-}
-
-void Buy_internal(Categories_elem* categories, const std::string &selectedCategory, const unsigned int &cost)
-{
-    Buy_internal(categories, selectedCategory, cost, "");
 }
 
 /////////////////////////////
 // API
 /////////////////////////////
-std::tuple<std::list<std::string>, std::string> Costs_nb_core::GetCurrentCategories()
+
+CostsNbCore::CostsNbCore(const std::string &db_file_name_, const std::string &cfg_file_name_)
 {
-    std::list<std::string> categoriesNames;
-    for (auto i = categories->subCategories.begin(); i != categories->subCategories.end(); ++i)
-    {
-        std::string displayCategoryName = AddDisplaySubCategoriesPrefix(*i);
-        categoriesNames.push_back(displayCategoryName);
-    }
-    return std::make_tuple(categoriesNames, categories->categoryName);
+    db_file_name = db_file_name_;
+    cfg_file_name = cfg_file_name_;
+    categories = ReadCategoriesFromDb(db_file_name);
+    SyncDbWithServer();
 }
 
-bool Costs_nb_core::CategorySelected(const std::string &selectedCategoryName0)
+CostsNbCore::~CostsNbCore()
 {
-    std::string selectedCategoryName = RemoveDisplaySubCategoriesPrefix(selectedCategoryName0);
+    CategoriesElem* root_category = categories;
+    while (root_category->parent_category != nullptr)
+        root_category = root_category->parent_category;
+    WriteCategoriesToDb(root_category, db_file_name);
+}
 
-    Categories_elem* selectedCategory = GetSubCategoryByName(categories, selectedCategoryName);
-    if (selectedCategory == nullptr)
+std::tuple<std::list<std::string>, std::string> CostsNbCore::GetCurrentCategories()
+{
+    std::list<std::string> categories_names;
+    for (auto category = categories->sub_categories.begin(); category != categories->sub_categories.end(); ++category)
+    {
+        std::string display_category_name = AddDisplaySubCategoriesPrefix(*category);
+        categories_names.push_back(display_category_name);
+    }
+    return std::make_tuple(categories_names, categories->category_name);
+}
+
+bool CostsNbCore::CategorySelected(const std::string &selected_category_name_)
+{
+    std::string selected_category_name = RemoveDisplaySubCategoriesPrefix(selected_category_name_);
+
+    CategoriesElem* selected_category = GetSubCategoryByName(categories, selected_category_name);
+    if (selected_category == nullptr)
         return false;
 
-    if (selectedCategory->subCategories.empty())
+    if (selected_category->sub_categories.empty())
         return true;
 
-    categories = selectedCategory;
+    categories = selected_category;
     return false;
 }
 
-void Costs_nb_core::CategoryBack()
+void CostsNbCore::CategoryBack()
 {
-    if (categories->parentCategory != nullptr)
+    if (categories->parent_category != nullptr)
     {
-        categories = categories->parentCategory;
+        categories = categories->parent_category;
     }
 }
 
-bool Costs_nb_core::CategoryAdd(const std::string &newCategoryName)
+bool CostsNbCore::CategoryAdd(const std::string &new_category_name)
 {
-    return AddSubCategory(categories, newCategoryName);
+    return AddSubCategory(categories, new_category_name);
 }
 
-bool Costs_nb_core::CategoryAddSub(const std::string &parentCategoryName0, const std::string &newCategoryName)
+bool CostsNbCore::CategoryAddSub(const std::string &parent_category_name_, const std::string &new_category_name)
 {
-    std::string parentCategoryName = RemoveDisplaySubCategoriesPrefix(parentCategoryName0);
+    std::string parent_category_name = RemoveDisplaySubCategoriesPrefix(parent_category_name_);
 
-    Categories_elem* parentCategory = GetSubCategoryByName(categories, parentCategoryName);
-    if (parentCategory == nullptr)
+    CategoriesElem* parent_category = GetSubCategoryByName(categories, parent_category_name);
+    if (parent_category == nullptr)
         return false;
 
-    if (!AddSubCategory(parentCategory, newCategoryName))
+    if (!AddSubCategory(parent_category, new_category_name))
         return false;
 
-    categories = parentCategory;
+    categories = parent_category;
     return true;
 }
 
-bool Costs_nb_core::RemoveCategory(const std::string &removingCategoryName0)
+bool CostsNbCore::RemoveCategory(const std::string &removing_category_name_)
 {
-    std::string removingCategoryName = RemoveDisplaySubCategoriesPrefix(removingCategoryName0);
+    std::string removing_category_name = RemoveDisplaySubCategoriesPrefix(removing_category_name_);
 
-    Categories_elem* category = GetSubCategoryByName(categories, removingCategoryName);
+    CategoriesElem* category = GetSubCategoryByName(categories, removing_category_name);
     if (category == nullptr)
         return false;
 
-    std::list<Expense_elem> expenses;
+    std::list<ExpenseElem> expenses;
     GetAllNestedExpenses(expenses, category);
-    for (auto i = expenses.begin(); i != expenses.end(); ++i) {
-        category->parentCategory->expenses.push_back(*i);
+    for (auto expense = expenses.begin(); expense != expenses.end(); ++expense) {
+        category->parent_category->expenses.push_back(*expense);
     }
 
-    categories->subCategories.remove(category);
-    if (categories->subCategories.empty())
+    categories->sub_categories.remove(category);
+    if (categories->sub_categories.empty())
         CategoryBack();
     return true;
 }
 
-bool Costs_nb_core::RenameCategory(const std::string &oldName, const std::string &newName)
+bool CostsNbCore::RenameCategory(const std::string &old_name, const std::string &new_name)
 {
-    return RenameCategory_internal(categories, oldName, newName);
+    return ::RenameCategory(categories, old_name, new_name);
 }
 
-void Costs_nb_core::Buy(const std::string &selectedCategory, const unsigned int &cost, const std::string &info)
+void CostsNbCore::Buy(const std::string &selected_category, const unsigned int &cost, const std::string &info)
 {
-    Buy_internal(categories, selectedCategory, cost, info);
+    ::Buy(categories, selected_category, cost, info);
 }
 
-std::list<std::string> Costs_nb_core::GetExpenses(const std::string &selectedCategory0)
+std::list<std::string> CostsNbCore::GetExpenses(const std::string &selected_category)
 {
-    return GetExpenses_internal(categories, selectedCategory0);
+    return ::GetExpenses(categories, selected_category);
 }
 
-std::list<std::string> Costs_nb_core::GetAllExpenses(const std::string &selectedCategory0)
+std::list<std::string> CostsNbCore::GetAllExpenses(const std::string &selected_category)
 {
-    return GetAllExpenses_internal(categories, selectedCategory0);
+    return ::GetAllExpenses(categories, selected_category);
 }

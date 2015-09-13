@@ -16,11 +16,14 @@ costsnb_clisrv_encoder.o: gen_xslt
 costsnb_tcp_transport.o: costsnb_clisrv_decoder.o costsnb_clisrv_encoder.o
 	g++ -g -std=c++11 -c costsnb_tcp_transport.cpp -o costsnb_tcp_transport.o
 
-core: jsoncpp.o costsnb_tcp_transport.o
+utils.o:
+	$(CC) $(CFLAGS) $(CC_INCLUDE) -c utils.cpp -o utils.o
+
+core: jsoncpp.o costsnb_tcp_transport.o utils.o
 	$(CC) $(CFLAGS) $(CC_INCLUDE) -c costs_nb_core.cpp -o costs_nb_core.o
 
 ut: core
-	$(CC) $(CFLAGS) $(CC_INCLUDE) costsnb_clisrv_decoder.o costsnb_clisrv_encoder.o costsnb_tcp_transport.o jsoncpp.o costs_nb_core.o costs_nb_core_ut.cpp -o ut
+	$(CC) $(CFLAGS) $(CC_INCLUDE) utils.o costsnb_clisrv_decoder.o costsnb_clisrv_encoder.o costsnb_tcp_transport.o jsoncpp.o costs_nb_core.o costs_nb_core_ut.cpp -o ut
 
 run_ut: ut
 	./ut

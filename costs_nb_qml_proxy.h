@@ -16,7 +16,7 @@ class Costs_nb_qml_proxy : public QObject
     void update_qml_categoriesModel();
     std::tuple<QStringList, QString> current_categories();
 
-    Costs_nb_core *costs_nb_core;
+    CostsNbCore *costs_nb_core;
     QQmlContext *_qmlContext;
 public:
     Costs_nb_qml_proxy(QQmlContext *qmlContext = 0);

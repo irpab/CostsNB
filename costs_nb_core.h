@@ -11,21 +11,11 @@
 #include "json/json-forwards.h"
 #include "json/json.h"
 
+#include "utils.h"
+
 #define SUPPORTED_DB_VERSION 1
 
-namespace workaround // workaround
-{
-    template < typename T > std::string to_string( const T& n )
-    {
-        std::ostringstream stm ;
-        stm << n ;
-        return stm.str() ;
-    }
-}
-
-std::string intMonth2str(unsigned int month);
-
-struct Expense_elem
+struct ExpenseElem
 {
     struct Datetime
     {
@@ -38,18 +28,18 @@ struct Expense_elem
             m  = 0;
             s  = 0;
         }
-        Datetime(unsigned short y0, unsigned short mn0, unsigned short d0,
-                 unsigned short h0, unsigned short m0, unsigned short s0) :
-            y(y0), mn(mn0), d(d0), h(h0), m(m0), s(s0)
+        Datetime(unsigned short y_, unsigned short mn_, unsigned short d_,
+                 unsigned short h_, unsigned short m_, unsigned short s_) :
+            y(y_), mn(mn_), d(d_), h(h_), m(m_), s(s_)
         {}
         Datetime(const struct tm * t)
         {
-            y = t->tm_year + 1900;
+            y  = t->tm_year + 1900;
             mn = t->tm_mon + 1;
-            d = t->tm_mday;
-            h = t->tm_hour;
-            m = t->tm_min;
-            s = t->tm_sec;
+            d  = t->tm_mday;
+            h  = t->tm_hour;
+            m  = t->tm_min;
+            s  = t->tm_sec;
         }
 
         bool operator>(const Datetime &r) const {
@@ -74,38 +64,38 @@ struct Expense_elem
             return false;
         }
 
-        std::string toStr() const
+        std::string ToStr() const
         {
             std::stringstream ss;
-            ss << y << '-' << intMonth2str(mn) << '-'
-                << std::setw(2) << std::setfill('0') << d
-                << " "<< std::setw(2) << std::setfill('0') << h
-                << ":" << std::setw(2) << std::setfill('0') << m;
+            ss << y << '-' << utils::MonthNumToStr(mn) << '-'
+              << std::setw(2) << std::setfill('0') << d << " "
+              << std::setw(2) << std::setfill('0') << h << ":"
+              << std::setw(2) << std::setfill('0') << m;
             return ss.str();
         }
 
         unsigned short y, mn, d, h, m, s;
     };
 
-    Expense_elem(const struct tm * datetime0, unsigned int cost0) :
-        datetime(datetime0), cost(cost0), info("")
+    ExpenseElem(const struct tm * datetime_, unsigned int cost_) :
+        datetime(datetime_), cost(cost_), info("")
     {}
 
-    Expense_elem(const Datetime datetime0, unsigned int cost0) :
-        datetime(datetime0), cost(cost0), info("")
+    ExpenseElem(const Datetime datetime_, unsigned int cost_) :
+        datetime(datetime_), cost(cost_), info("")
     {}
 
-    Expense_elem(const Datetime datetime0, unsigned int cost0, const std::string &info0) :
-        datetime(datetime0), cost(cost0), info(info0)
+    ExpenseElem(const Datetime datetime_, unsigned int cost_, const std::string &info_) :
+        datetime(datetime_), cost(cost_), info(info_)
     {}
 
-    Expense_elem(const struct tm * datetime0, unsigned int cost0, const std::string &info0) :
-        datetime(datetime0), cost(cost0), info(info0)
+    ExpenseElem(const struct tm * datetime_, unsigned int cost_, const std::string &info_) :
+        datetime(datetime_), cost(cost_), info(info_)
     {}
 
-    std::string toStr() const
+    std::string ToStr() const
     {
-        return datetime.toStr() + "   " + workaround::to_string(cost);
+        return datetime.ToStr() + "   " + utils::to_string(cost);
     }
 
     Datetime datetime;
@@ -114,50 +104,54 @@ struct Expense_elem
 };
 
 
-struct Categories_elem
+struct CategoriesElem
 {
-    Categories_elem(const std::string &categoryName0, Categories_elem* parentCategory0) :
-        categoryName(categoryName0), rating(0), parentCategory(parentCategory0)
+    CategoriesElem(const std::string &category_name_, CategoriesElem* parent_category_) :
+        category_name(category_name_), rating(0), parent_category(parent_category_)
     {
     }
-    Categories_elem(const std::string &categoryName0, Categories_elem* parentCategory0, unsigned int rating0) :
-        categoryName(categoryName0), rating(rating0), parentCategory(parentCategory0)
+    CategoriesElem(const std::string &category_name_, CategoriesElem* parent_category_, unsigned int rating_) :
+        category_name(category_name_), rating(rating_), parent_category(parent_category_)
     {
     }
 
-    std::string categoryName;
+    std::string category_name;
     unsigned int rating;
-    Categories_elem* parentCategory;
-    std::list<Categories_elem*> subCategories;
-    std::list<Expense_elem> expenses;
+    CategoriesElem* parent_category;
+    std::list<CategoriesElem*> sub_categories;
+    std::list<ExpenseElem> expenses;
 };
 
 
-class Costs_nb_core
+class CostsNbCore
 {
-    Categories_elem *categories;
-    std::string dbFileName;
-    std::string cfgFileName;
-
-    Categories_elem* Read_categories_from_db(const std::string &dbFile);
-    void Convert_json_to_categories(Categories_elem* parentCategory, const unsigned int &index, const Json::Value &jsonCategories);
-    void Convert_categories_to_json(Json::Value &rootJson, const Categories_elem* categories);
-    void Write_categories_to_db(const Categories_elem* rootCategory, const std::string &dbFileName);
-    void Sync_db_with_server();
 public:
-    Costs_nb_core(const std::string &dbFileName, const std::string &cfgFileName);
-    ~Costs_nb_core();
+    CostsNbCore(const std::string &db_file_name, const std::string &cfg_file_name);
+    ~CostsNbCore();
 
     std::tuple<std::list<std::string>, std::string> GetCurrentCategories();
-    bool CategorySelected(const std::string &selectedCategory);
-    bool RemoveCategory(const std::string &selectedCategory);
-    bool RenameCategory(const std::string &oldName, const std::string &newName);
+    bool CategorySelected(const std::string &selected_category);
+    bool RemoveCategory(const std::string &selected_category);
+    bool RenameCategory(const std::string &old_name, const std::string &new_name);
     void CategoryBack();
-    bool CategoryAdd(const std::string &newCategory);
-    bool CategoryAddSub(const std::string &parentCategory, const std::string &newCategory);
-    void Buy(const std::string &selectedCategory, const unsigned int &cost, const std::string &info);
-    std::list<std::string> GetExpenses(const std::string &selectedCategory);
-    std::list<std::string> GetAllExpenses(const std::string &selectedCategory);
+    bool CategoryAdd(const std::string &new_category);
+    bool CategoryAddSub(const std::string &parent_category, const std::string &new_category);
+    void Buy(const std::string &selected_category, const unsigned int &cost, const std::string &info);
+    std::list<std::string> GetExpenses(const std::string &selected_category);
+    std::list<std::string> GetAllExpenses(const std::string &selected_category);
+
+private:
+    CategoriesElem *categories;
+    std::string db_file_name;
+    std::string cfg_file_name;
+
+    // TODO: refactor working with json lib
+    CategoriesElem* ReadCategoriesFromDb(const std::string &dbFile);
+    void ConvertJsonToCategories(CategoriesElem* parentCategory, const unsigned int &index, const Json::Value &jsonCategories);
+    void ConvertCategoriesToJson(Json::Value &rootJson, const CategoriesElem* categories);
+    void WriteCategoriesToDb(const CategoriesElem* rootCategory, const std::string &db_file_name);
+    // TODO: refactor working with server
+    void SyncDbWithServer();
 };
 
 #endif // COSTS_NB_CORE_H
