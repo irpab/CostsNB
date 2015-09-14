@@ -52,19 +52,4 @@ bool FileExists(const std::string& fileName)
     return infile.good();
 }
 
-// std::string tm2str(const struct tm * t)
-// {
-//     std::stringstream ss;
-//     ss << (t->tm_year + 1900) << '-' << utils::MonthNumToStr(t->tm_mon + 1) << '-'
-//         << std::setw(2) << std::setfill('0') << t->tm_mday
-//         << " " << t->tm_hour << ":" << std::setw(2) << std::setfill('0') << t->tm_min;
-//     return ss.str();
-// }
-
-// std::string now2str()
-// {
-//     struct tm * t = utils::Now();
-//     return tm2str(t);
-// }
-
 } // namespace utils

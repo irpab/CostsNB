@@ -155,6 +155,8 @@ bool ValidateCategoryName(const std::string &category_name)
 {
     if (category_name.size() == 0)
         return false;
+    if (category_name.length() >= 2 && !category_name.compare(0,2,"> "))
+        return false;
     return true;
 }
 

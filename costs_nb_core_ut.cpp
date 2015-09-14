@@ -1,21 +1,38 @@
 #define CATCH_CONFIG_MAIN
+#include <vector>
+
 #include "catch.hpp"
 
 #include "costs_nb_core.h"
 
+#define CREATE_LEAF_CATEGORY_R(VAR, ROOT, NAME, RATING) CategoriesElem* VAR = new CategoriesElem(NAME, ROOT, RATING)
+#define CREATE_ROOT_CATEGORY_R(VAR, NAME, RATING) CREATE_LEAF_CATEGORY_R(VAR, nullptr, NAME, RATING)
+#define CREATE_LEAF_CATEGORY(VAR, ROOT, NAME) CategoriesElem* VAR = new CategoriesElem(NAME, ROOT)
+#define CREATE_ROOT_CATEGORY(VAR, NAME) CREATE_LEAF_CATEGORY(VAR, nullptr, NAME)
+#define LINK_ROOT_LEAF(ROOT, VAR) ROOT->sub_categories.push_back(VAR)
+#define ADD_SUB_CATEGORY(VAR, NAME) VAR->sub_categories.push_back(new CategoriesElem(NAME, VAR))
+#define COMPARE_STRINGS(STR1, STR2) 0 == std::string(STR1).compare(STR2)
+#define CREATE_EXPENSE(VAR, COST) ExpenseElem VAR = ExpenseElem(ExpenseElem::Datetime(), COST)
+#define LINK_EXPENSE(CAT, EXP) CAT->expenses.push_back(EXP);
+
 extern bool ValidateCategoryName(const std::string &newCategory);
 TEST_CASE( "ValidateCategoryName", "[internal]" ) {
   CHECK(!ValidateCategoryName("") );
+  CHECK(!ValidateCategoryName("> ") );
+  CHECK(!ValidateCategoryName("> asfsfgds") );
+  CHECK( ValidateCategoryName(">") );
+  CHECK( ValidateCategoryName(" > asfsfgds") );
+  CHECK( ValidateCategoryName("asfs > fgds") );
   CHECK( ValidateCategoryName("a") );
   CHECK( ValidateCategoryName("abc def") );
 }
 
 extern bool SubCategoriesContainCategory(const CategoriesElem* categories, const std::string &categoryName);
 TEST_CASE( "SubCategoriesContainCategory", "[internal]" ) {
-  CategoriesElem* category = new CategoriesElem("Cat1", nullptr);
-  category->sub_categories.push_back(new CategoriesElem("Cat11", category));
-  category->sub_categories.push_back(new CategoriesElem("Cat12", category));
-  category->sub_categories.push_back(new CategoriesElem("Cat13", category));
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  ADD_SUB_CATEGORY(category, "Cat11");
+  ADD_SUB_CATEGORY(category, "Cat12");
+  ADD_SUB_CATEGORY(category, "Cat13");
 
   CHECK(!SubCategoriesContainCategory(category, "Cat1"));
   CHECK(!SubCategoriesContainCategory(category, "Cat2"));
@@ -30,35 +47,35 @@ TEST_CASE( "SubCategoriesContainCategory", "[internal]" ) {
 
 extern std::string AddDisplaySubCategoriesPrefix(const CategoriesElem* category);
 TEST_CASE( "AddDisplaySubCategoriesPrefix", "[internal]" ) {
-  CategoriesElem* category_w_subcat = new CategoriesElem("Cat1", nullptr);
-  category_w_subcat->sub_categories.push_back(new CategoriesElem("Cat11", category_w_subcat));
-  CHECK(0 == std::string("> Cat1").compare(AddDisplaySubCategoriesPrefix(category_w_subcat)));
+  CREATE_ROOT_CATEGORY(category_w_subcat, "Cat1");
+  ADD_SUB_CATEGORY(category_w_subcat, "Cat11");
+  CHECK(COMPARE_STRINGS("> Cat1", AddDisplaySubCategoriesPrefix(category_w_subcat)));
 
-  CategoriesElem* category_wo_subcat = new CategoriesElem("Cat1", nullptr);
-  CHECK(0 == std::string("Cat1").compare(AddDisplaySubCategoriesPrefix(category_wo_subcat)));
+  CREATE_ROOT_CATEGORY(category_wo_subcat, "Cat1");
+  CHECK(COMPARE_STRINGS("Cat1", AddDisplaySubCategoriesPrefix(category_wo_subcat)));
 }
 
 extern std::string RemoveDisplaySubCategoriesPrefix(const std::string categoryName);
 TEST_CASE( "RemoveDisplaySubCategoriesPrefix", "[internal]" ) {
-  CHECK(0 == std::string("").compare(RemoveDisplaySubCategoriesPrefix("")));
-  CHECK(0 == std::string(">").compare(RemoveDisplaySubCategoriesPrefix(">")));
-  CHECK(0 == std::string("> ").compare(RemoveDisplaySubCategoriesPrefix("> ")));
-  CHECK(0 == std::string("C").compare(RemoveDisplaySubCategoriesPrefix("> C")));
-  CHECK(0 == std::string("Cat1").compare(RemoveDisplaySubCategoriesPrefix("Cat1")));
-  CHECK(0 == std::string("Cat1").compare(RemoveDisplaySubCategoriesPrefix("> Cat1")));
-  CHECK(0 == std::string("> Cat1").compare(RemoveDisplaySubCategoriesPrefix("> > Cat1")));
-  CHECK(0 == std::string("Cat1> ").compare(RemoveDisplaySubCategoriesPrefix("Cat1> ")));
+  CHECK(COMPARE_STRINGS(""      , RemoveDisplaySubCategoriesPrefix("")));
+  CHECK(COMPARE_STRINGS(">"     , RemoveDisplaySubCategoriesPrefix(">")));
+  CHECK(COMPARE_STRINGS("> "    , RemoveDisplaySubCategoriesPrefix("> ")));
+  CHECK(COMPARE_STRINGS("C"     , RemoveDisplaySubCategoriesPrefix("> C")));
+  CHECK(COMPARE_STRINGS("Cat1"  , RemoveDisplaySubCategoriesPrefix("Cat1")));
+  CHECK(COMPARE_STRINGS("Cat1"  , RemoveDisplaySubCategoriesPrefix("> Cat1")));
+  CHECK(COMPARE_STRINGS("Cat1> ", RemoveDisplaySubCategoriesPrefix("Cat1> ")));
+  CHECK(COMPARE_STRINGS("> Cat1", RemoveDisplaySubCategoriesPrefix("> > Cat1")));
 }
 
 extern CategoriesElem* GetSubCategoryByName(const CategoriesElem* category, const std::string &categoryName);
 TEST_CASE( "GetSubCategoryByName", "[internal]" ) {
-  CategoriesElem* category = new CategoriesElem("Cat1", nullptr);
-  CategoriesElem* subCat1 = new CategoriesElem("Cat11", category);
-  CategoriesElem* subCat2 = new CategoriesElem("Cat12", category);
-  CategoriesElem* subCat3 = new CategoriesElem("Cat13", category);
-  category->sub_categories.push_back(subCat1);
-  category->sub_categories.push_back(subCat2);
-  category->sub_categories.push_back(subCat3);
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  CREATE_LEAF_CATEGORY(subCat1, category, "Cat11");
+  CREATE_LEAF_CATEGORY(subCat2, category, "Cat12");
+  CREATE_LEAF_CATEGORY(subCat3, category, "Cat13");
+  LINK_ROOT_LEAF(category, subCat1);
+  LINK_ROOT_LEAF(category, subCat2);
+  LINK_ROOT_LEAF(category, subCat3);
 
   CHECK(subCat1 == GetSubCategoryByName(category, "Cat11"));
   CHECK(subCat2 == GetSubCategoryByName(category, "Cat12"));
@@ -66,61 +83,53 @@ TEST_CASE( "GetSubCategoryByName", "[internal]" ) {
   CHECK(nullptr == GetSubCategoryByName(category, "Cat14"));
 }
 
+void UtVerifySubCategories(const std::vector<std::string> sub_categories_str, const CategoriesElem* const category) {
+  auto sub_category = category->sub_categories.begin();
+  for (auto sub_category_str = sub_categories_str.begin(); sub_category_str != sub_categories_str.end(); ++sub_category_str) {
+    REQUIRE(COMPARE_STRINGS(*sub_category_str, (*sub_category)->category_name));
+    ++sub_category;
+  }
+  REQUIRE(sub_category == category->sub_categories.end());
+}
+
 extern bool AddSubCategory(CategoriesElem* category, const std::string &newCategoryName);
 TEST_CASE( "AddSubCategory", "[internal]" ) {
-  CategoriesElem* category = new CategoriesElem("Cat1", nullptr);
-  category->sub_categories.push_back(new CategoriesElem("Cat11", category));
-  category->sub_categories.push_back(new CategoriesElem("Cat12", category));
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  ADD_SUB_CATEGORY(category, "Cat11");
+  ADD_SUB_CATEGORY(category, "Cat12");
+  UtVerifySubCategories({"Cat11", "Cat12"}, category);
+
   REQUIRE( AddSubCategory(category, "Cat13"));
-  auto subCat = category->sub_categories.begin();
-  REQUIRE(0 == std::string("Cat11").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(0 == std::string("Cat12").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(0 == std::string("Cat13").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(subCat == category->sub_categories.end());
+  UtVerifySubCategories({"Cat11", "Cat12", "Cat13"}, category);
 
+  UtVerifySubCategories({"Cat11", "Cat12", "Cat13"}, category);
   REQUIRE(!AddSubCategory(category, "Cat11"));
-  subCat = category->sub_categories.begin();
-  REQUIRE(0 == std::string("Cat11").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(0 == std::string("Cat12").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(0 == std::string("Cat13").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(subCat == category->sub_categories.end());
 
+  UtVerifySubCategories({"Cat11", "Cat12", "Cat13"}, category);
   REQUIRE(!AddSubCategory(category, "Cat13"));
-  subCat = category->sub_categories.begin();
-  REQUIRE(0 == std::string("Cat11").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(0 == std::string("Cat12").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(0 == std::string("Cat13").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(subCat == category->sub_categories.end());
 }
 
 TEST_CASE( "MonthNumToStr", "[internal]" ) {
-  CHECK(0 == std::string("Jan").compare(utils::MonthNumToStr( 1)));
-  CHECK(0 == std::string("Feb").compare(utils::MonthNumToStr( 2)));
-  CHECK(0 == std::string("Mar").compare(utils::MonthNumToStr( 3)));
-  CHECK(0 == std::string("Apr").compare(utils::MonthNumToStr( 4)));
-  CHECK(0 == std::string("May").compare(utils::MonthNumToStr( 5)));
-  CHECK(0 == std::string("Jun").compare(utils::MonthNumToStr( 6)));
-  CHECK(0 == std::string("Jul").compare(utils::MonthNumToStr( 7)));
-  CHECK(0 == std::string("Aug").compare(utils::MonthNumToStr( 8)));
-  CHECK(0 == std::string("Sep").compare(utils::MonthNumToStr( 9)));
-  CHECK(0 == std::string("Oct").compare(utils::MonthNumToStr(10)));
-  CHECK(0 == std::string("Nov").compare(utils::MonthNumToStr(11)));
-  CHECK(0 == std::string("Dec").compare(utils::MonthNumToStr(12)));
-  CHECK(0 == std::string("---").compare(utils::MonthNumToStr(13)));
-  CHECK(0 == std::string("---").compare(utils::MonthNumToStr( 0)));
+  CHECK(COMPARE_STRINGS("Jan", utils::MonthNumToStr( 1)));
+  CHECK(COMPARE_STRINGS("Feb", utils::MonthNumToStr( 2)));
+  CHECK(COMPARE_STRINGS("Mar", utils::MonthNumToStr( 3)));
+  CHECK(COMPARE_STRINGS("Apr", utils::MonthNumToStr( 4)));
+  CHECK(COMPARE_STRINGS("May", utils::MonthNumToStr( 5)));
+  CHECK(COMPARE_STRINGS("Jun", utils::MonthNumToStr( 6)));
+  CHECK(COMPARE_STRINGS("Jul", utils::MonthNumToStr( 7)));
+  CHECK(COMPARE_STRINGS("Aug", utils::MonthNumToStr( 8)));
+  CHECK(COMPARE_STRINGS("Sep", utils::MonthNumToStr( 9)));
+  CHECK(COMPARE_STRINGS("Oct", utils::MonthNumToStr(10)));
+  CHECK(COMPARE_STRINGS("Nov", utils::MonthNumToStr(11)));
+  CHECK(COMPARE_STRINGS("Dec", utils::MonthNumToStr(12)));
+  CHECK(COMPARE_STRINGS("---", utils::MonthNumToStr(13)));
+  CHECK(COMPARE_STRINGS("---", utils::MonthNumToStr( 0)));
 }
 
 TEST_CASE( "MonthStrToNum", "[internal]" ) {
+  CHECK(utils::MonthStrToNum("xxxxx") ==  0);
   CHECK(utils::MonthStrToNum("xxx") ==  0);
+  CHECK(utils::MonthStrToNum("")    ==  0);
   CHECK(utils::MonthStrToNum("Jan") ==  1);
   CHECK(utils::MonthStrToNum("Feb") ==  2);
   CHECK(utils::MonthStrToNum("Mar") ==  3);
@@ -137,85 +146,64 @@ TEST_CASE( "MonthStrToNum", "[internal]" ) {
 
 extern bool RenameCategory(CategoriesElem* categories, const std::string &oldName0, const std::string &newName);
 TEST_CASE( "RenameCategory", "[internal]" ) {
-  CategoriesElem* category = new CategoriesElem("Cat1", nullptr);
-  category->sub_categories.push_back(new CategoriesElem("Cat11", category));
-  category->sub_categories.push_back(new CategoriesElem("Cat12", category));
-  category->sub_categories.push_back(new CategoriesElem("Cat13", category));
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  ADD_SUB_CATEGORY(category, "Cat11");
+  ADD_SUB_CATEGORY(category, "Cat12");
+  ADD_SUB_CATEGORY(category, "Cat13");
+  UtVerifySubCategories({"Cat11", "Cat12", "Cat13"}, category);
 
   REQUIRE(!RenameCategory(category, "Cat11", "Cat12"));
   REQUIRE(!RenameCategory(category, "Cat12", "Cat12"));
   REQUIRE(!RenameCategory(category, "Cat11", ""));
-  auto subCat = category->sub_categories.begin();
-  REQUIRE(0 == std::string("Cat11").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(0 == std::string("Cat12").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(0 == std::string("Cat13").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(subCat == category->sub_categories.end());
+  UtVerifySubCategories({"Cat11", "Cat12", "Cat13"}, category);
 
   REQUIRE( RenameCategory(category, "Cat11", "Tac111"));
   REQUIRE( RenameCategory(category, "Cat13", "Cat14"));
   REQUIRE( RenameCategory(category, "Tac111", "Tac0"));
-  subCat = category->sub_categories.begin();
-  REQUIRE(0 == std::string("Tac0").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(0 == std::string("Cat12").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(0 == std::string("Cat14").compare((*subCat)->category_name));
-  ++subCat;
-  REQUIRE(subCat == category->sub_categories.end());
+  UtVerifySubCategories({"Tac0", "Cat12", "Cat14"}, category);
+}
+
+void UtVerifyExpenses(const std::vector<std::string> expenses0, const std::list<std::string> &expenses1) {
+  auto expense_i1 = expenses1.begin();
+  for (auto expense_i0 = expenses0.begin(); expense_i0 != expenses0.end(); ++expense_i0) {
+    REQUIRE(COMPARE_STRINGS(*expense_i0, *expense_i1));
+    ++expense_i1;
+  }
+  REQUIRE(expense_i1 == expenses1.end());
 }
 
 extern std::list<std::string> GetExpenses(CategoriesElem* categories, const std::string &selectedCategory0);
 TEST_CASE( "GetExpenses", "[internal]" ) {
-  CategoriesElem* category = new CategoriesElem("Cat1", nullptr);
-  CategoriesElem* cat11 = new CategoriesElem("Cat11", category);
-  CategoriesElem* cat12 = new CategoriesElem("Cat12", category);
-  category->sub_categories.push_back(cat11);
-  category->sub_categories.push_back(cat12);
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+  CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
+  LINK_ROOT_LEAF(category, cat11);
+  LINK_ROOT_LEAF(category, cat12);
 
-  ExpenseElem e11_1 = ExpenseElem(ExpenseElem::Datetime(), 1);
-  ExpenseElem e11_2 = ExpenseElem(ExpenseElem::Datetime(), 132);
-  ExpenseElem e11_3 = ExpenseElem(ExpenseElem::Datetime(), 56);
-  ExpenseElem e12_1 = ExpenseElem(ExpenseElem::Datetime(), 463);
-  ExpenseElem e12_2 = ExpenseElem(ExpenseElem::Datetime(), 65);
-  cat11->expenses.push_back(e11_1);
-  cat11->expenses.push_back(e11_2);
-  cat11->expenses.push_back(e11_3);
-  cat12->expenses.push_back(e12_1);
-  cat12->expenses.push_back(e12_2);
+  CREATE_EXPENSE(e11_1, 1);
+  CREATE_EXPENSE(e11_2, 132);
+  CREATE_EXPENSE(e11_3, 56);
+  CREATE_EXPENSE(e12_1, 463);
+  CREATE_EXPENSE(e12_2, 65);
+  LINK_EXPENSE(cat11, e11_1);
+  LINK_EXPENSE(cat11, e11_2);
+  LINK_EXPENSE(cat11, e11_3);
+  LINK_EXPENSE(cat12, e12_1);
+  LINK_EXPENSE(cat12, e12_2);
 
-  auto Expenses1 = GetExpenses(category, "Cat11");
-  auto Expenses1i = Expenses1.begin();
-  REQUIRE(0 == std::string(e11_1.ToStr()).compare(*Expenses1i));
-  ++Expenses1i;
-  REQUIRE(0 == std::string(e11_2.ToStr()).compare(*Expenses1i));
-  ++Expenses1i;
-  REQUIRE(0 == std::string(e11_3.ToStr()).compare(*Expenses1i));
-  ++Expenses1i;
-  REQUIRE(Expenses1i == Expenses1.end());
-
-  auto Expenses2 = GetExpenses(category, "Cat12");
-  auto Expenses2i = Expenses2.begin();
-  REQUIRE(0 == std::string(e12_1.ToStr()).compare(*Expenses2i));
-  ++Expenses2i;
-  REQUIRE(0 == std::string(e12_2.ToStr()).compare(*Expenses2i));
-  ++Expenses2i;
-  REQUIRE(Expenses2i == Expenses2.end());
-
-  auto Expenses0 = GetExpenses(category, "Cat10");
-  REQUIRE(Expenses0.empty());
+  UtVerifyExpenses({e11_1.ToStr(), e11_2.ToStr(), e11_3.ToStr()}, GetExpenses(category, "Cat11"));
+  UtVerifyExpenses({e12_1.ToStr(), e12_2.ToStr()}, GetExpenses(category, "Cat12"));
+  REQUIRE(GetExpenses(category, "Cat10").empty());
 }
 
 TEST_CASE( "ExpenseElem.toStr", "[internal]" ) {
-  ExpenseElem e11_1 = ExpenseElem(ExpenseElem::Datetime(), 1);
-  ExpenseElem e11_2 = ExpenseElem(ExpenseElem::Datetime(), 132);
-  ExpenseElem e11_3 = ExpenseElem(ExpenseElem::Datetime(), 56);
+  CREATE_EXPENSE(e11_1, 1);
+  CREATE_EXPENSE(e11_2, 132);
+  CREATE_EXPENSE(e11_3, 56);
 
-  CHECK(0 == std::string("2000-Jan-01 00:00   1")  .compare(e11_1.ToStr()));
-  CHECK(0 == std::string("2000-Jan-01 00:00   132").compare(e11_2.ToStr()));
-  CHECK(0 == std::string("2000-Jan-01 00:00   56") .compare(e11_3.ToStr()));
+  CHECK(COMPARE_STRINGS("2000-Jan-01 00:00   1"  , e11_1.ToStr()));
+  CHECK(COMPARE_STRINGS("2000-Jan-01 00:00   132", e11_2.ToStr()));
+  CHECK(COMPARE_STRINGS("2000-Jan-01 00:00   56" , e11_3.ToStr()));
 }
 
 TEST_CASE( "Datetime.operator>", "[internal]" ) {
@@ -238,7 +226,7 @@ TEST_CASE( "Datetime.operator>", "[internal]" ) {
 
 extern std::list<std::string> GetAllExpenses(CategoriesElem* categories, const std::string &selectedCategory0);
 TEST_CASE( "GetAllExpenses", "[internal]" ) {
-  CategoriesElem* category = new CategoriesElem("Cat1", nullptr);
+  CREATE_ROOT_CATEGORY(category, "Cat1");
   CategoriesElem* cat11 = new CategoriesElem("Cat11", category);
   CategoriesElem* cat12 = new CategoriesElem("Cat12", category);
   CategoriesElem* cat111 = new CategoriesElem("Cat111", cat11);
@@ -289,18 +277,18 @@ TEST_CASE( "GetAllExpenses", "[internal]" ) {
 
 extern void Buy(CategoriesElem* categories, const std::string &selectedCategory, const unsigned int cost, const std::string &info);
 TEST_CASE( "Buy.rating", "[internal]" ) {
-  CategoriesElem* cat1 = new CategoriesElem("Cat1", nullptr, 2);
-  CategoriesElem* cat11 = new CategoriesElem("Cat11", cat1, 15);
-  CategoriesElem* cat111 = new CategoriesElem("Cat111", cat11, 4);
-  CategoriesElem* cat1111 = new CategoriesElem("Cat1111", cat111, 9);
+  CREATE_ROOT_CATEGORY_R(cat1, "Cat1", 2);
+  CREATE_LEAF_CATEGORY_R(  cat11,   cat1,   "Cat11", 15);
+  CREATE_LEAF_CATEGORY_R( cat111,  cat11,  "Cat111",  4);
+  CREATE_LEAF_CATEGORY_R(cat1111, cat111, "Cat1111",  9);
 
-  cat1->sub_categories.push_back(cat11);
-  cat11->sub_categories.push_back(cat111);
-  cat111->sub_categories.push_back(cat1111);
+  LINK_ROOT_LEAF(  cat1,   cat11);
+  LINK_ROOT_LEAF( cat11,  cat111);
+  LINK_ROOT_LEAF(cat111, cat1111);
 
   Buy(cat111, "Cat1111", 7, "");
-  CHECK( 3 == cat1->rating);
-  CHECK(16 == cat11->rating);
-  CHECK( 5 == cat111->rating);
+  CHECK( 3 ==    cat1->rating);
+  CHECK(16 ==   cat11->rating);
+  CHECK( 5 ==  cat111->rating);
   CHECK(10 == cat1111->rating);
 }
