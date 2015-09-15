@@ -12,7 +12,8 @@
 #define LINK_ROOT_LEAF(ROOT, VAR) ROOT->sub_categories.push_back(VAR)
 #define ADD_SUB_CATEGORY(VAR, NAME) VAR->sub_categories.push_back(new CategoriesElem(NAME, VAR))
 #define COMPARE_STRINGS(STR1, STR2) 0 == std::string(STR1).compare(STR2)
-#define CREATE_EXPENSE(VAR, COST) ExpenseElem VAR = ExpenseElem(ExpenseElem::Datetime(), COST)
+#define CREATE_EXPENSE(VAR, COST) CREATE_EXPENSE_D(VAR, Datetime(1, 1, 1, 1, 1, 1), COST)
+#define CREATE_EXPENSE_D(VAR, DATE, COST) ExpenseElem VAR = ExpenseElem(ExpenseElem::DATE, COST)
 #define LINK_EXPENSE(CAT, EXP) CAT->expenses.push_back(EXP);
 
 extern bool ValidateCategoryName(const std::string &newCategory);
@@ -25,6 +26,36 @@ TEST_CASE( "ValidateCategoryName", "[internal]" ) {
   CHECK( ValidateCategoryName("asfs > fgds") );
   CHECK( ValidateCategoryName("a") );
   CHECK( ValidateCategoryName("abc def") );
+}
+
+extern bool CompareExpensesByDate(const ExpenseElem &e1, const ExpenseElem &e2);
+TEST_CASE( "CompareExpensesByDate", "[internal]" ) {
+  CREATE_EXPENSE_D(e1_1, Datetime(2015,  1, 11,  1, 21, 0), 7);
+  CREATE_EXPENSE_D(e2_1, Datetime(2015,  1, 11,  1, 21, 0), 7);
+  CHECK(!CompareExpensesByDate(e1_1, e2_1));
+  
+  CREATE_EXPENSE_D(e1_2, Datetime(2015,  1, 11,  8, 21, 0), 7);
+  CREATE_EXPENSE_D(e2_2, Datetime(2015,  1, 12,  1, 21, 0), 7);
+  CHECK(!CompareExpensesByDate(e1_2, e2_2));
+  
+  CREATE_EXPENSE_D(e1_3, Datetime(2016,  1, 11,  1, 21, 0), 7);
+  CREATE_EXPENSE_D(e2_3, Datetime(2015, 20, 11,  4, 42, 0), 12);
+  CHECK( CompareExpensesByDate(e1_3, e2_3));
+}
+
+extern bool CompareCategoriesByRating(const CategoriesElem* e1, const CategoriesElem* e2);
+TEST_CASE( "CompareCategoriesByRating", "[internal]" ) {
+  CREATE_ROOT_CATEGORY_R(c1_1, "c1_1", 12);
+  CREATE_ROOT_CATEGORY_R(c2_1, "c2_1", 13);
+  CHECK(!CompareCategoriesByRating(c1_1, c2_1) );
+
+  CREATE_ROOT_CATEGORY_R(c1_2, "c1_2", 17);
+  CREATE_ROOT_CATEGORY_R(c2_2, "c2_2", 13);
+  CHECK( CompareCategoriesByRating(c1_2, c2_2) );
+  
+  CREATE_ROOT_CATEGORY_R(c1_3, "c1_3", 2);
+  CREATE_ROOT_CATEGORY_R(c2_3, "c2_3", 2);
+  CHECK(!CompareCategoriesByRating(c1_3, c2_3) );
 }
 
 extern bool SubCategoriesContainCategory(const CategoriesElem* categories, const std::string &categoryName);
@@ -164,6 +195,7 @@ TEST_CASE( "RenameCategory", "[internal]" ) {
 }
 
 void UtVerifyExpenses(const std::vector<std::string> expenses0, const std::list<std::string> &expenses1) {
+  REQUIRE(expenses0.size() == expenses1.size());
   auto expense_i1 = expenses1.begin();
   for (auto expense_i0 = expenses0.begin(); expense_i0 != expenses0.end(); ++expense_i0) {
     REQUIRE(COMPARE_STRINGS(*expense_i0, *expense_i1));
@@ -196,14 +228,14 @@ TEST_CASE( "GetExpenses", "[internal]" ) {
   REQUIRE(GetExpenses(category, "Cat10").empty());
 }
 
-TEST_CASE( "ExpenseElem.toStr", "[internal]" ) {
-  CREATE_EXPENSE(e11_1, 1);
-  CREATE_EXPENSE(e11_2, 132);
-  CREATE_EXPENSE(e11_3, 56);
+TEST_CASE( "ExpenseElem.ToStr", "[internal]" ) {
+  CREATE_EXPENSE_D(e11_1, Datetime(2012, 12,  1,  5, 38,  0),   1);
+  CREATE_EXPENSE_D(e11_2, Datetime(1954,  1, 23, 23, 24, 59), 132);
+  CREATE_EXPENSE_D(e11_3, Datetime(2174,  7, 30, 11,  1, 54),  56);
 
-  CHECK(COMPARE_STRINGS("2000-Jan-01 00:00   1"  , e11_1.ToStr()));
-  CHECK(COMPARE_STRINGS("2000-Jan-01 00:00   132", e11_2.ToStr()));
-  CHECK(COMPARE_STRINGS("2000-Jan-01 00:00   56" , e11_3.ToStr()));
+  CHECK(COMPARE_STRINGS("2012-Dec-01 05:38   1"  , e11_1.ToStr()));
+  CHECK(COMPARE_STRINGS("1954-Jan-23 23:24   132", e11_2.ToStr()));
+  CHECK(COMPARE_STRINGS("2174-Jul-30 11:01   56" , e11_3.ToStr()));
 }
 
 TEST_CASE( "Datetime.operator>", "[internal]" ) {
@@ -227,55 +259,43 @@ TEST_CASE( "Datetime.operator>", "[internal]" ) {
 extern std::list<std::string> GetAllExpenses(CategoriesElem* categories, const std::string &selectedCategory0);
 TEST_CASE( "GetAllExpenses", "[internal]" ) {
   CREATE_ROOT_CATEGORY(category, "Cat1");
-  CategoriesElem* cat11 = new CategoriesElem("Cat11", category);
-  CategoriesElem* cat12 = new CategoriesElem("Cat12", category);
-  CategoriesElem* cat111 = new CategoriesElem("Cat111", cat11);
-  CategoriesElem* cat112 = new CategoriesElem("Cat112", cat11);
-  CategoriesElem* cat1111 = new CategoriesElem("Cat1111", cat111);
-  category->sub_categories.push_back(cat11);
-  category->sub_categories.push_back(cat12);
-  cat11->sub_categories.push_back(cat111);
-  cat11->sub_categories.push_back(cat112);
-  cat111->sub_categories.push_back(cat1111);
+  CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+  CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
+  CREATE_LEAF_CATEGORY(cat111, cat11, "Cat111");
+  CREATE_LEAF_CATEGORY(cat112, cat11, "Cat112");
+  CREATE_LEAF_CATEGORY(cat1111, cat111, "Cat1111");
+  LINK_ROOT_LEAF(category, cat11);
+  LINK_ROOT_LEAF(category, cat12);
+  LINK_ROOT_LEAF(cat11, cat111);
+  LINK_ROOT_LEAF(cat11, cat112);
+  LINK_ROOT_LEAF(cat111, cat1111);
 
-  ExpenseElem e1_1    = ExpenseElem(ExpenseElem::Datetime(2015,  1, 11,  1, 21, 0), 1);
-  ExpenseElem e1_2    = ExpenseElem(ExpenseElem::Datetime(2015,  7,  5,  6, 19, 0), 2);
-  ExpenseElem e11_1   = ExpenseElem(ExpenseElem::Datetime(2014,  2, 21, 13, 34, 0), 3);
-  ExpenseElem e11_2   = ExpenseElem(ExpenseElem::Datetime(2015,  1,  4,  3, 35, 0), 4);
-  ExpenseElem e12_1   = ExpenseElem(ExpenseElem::Datetime(2015,  4,  1,  9, 13, 0), 5);
-  ExpenseElem e111_1  = ExpenseElem(ExpenseElem::Datetime(2017,  4,  6,  7, 56, 0), 6);
-  ExpenseElem e112_1  = ExpenseElem(ExpenseElem::Datetime(2015,  1,  1,  1,  7, 0), 7);
-  ExpenseElem e112_2  = ExpenseElem(ExpenseElem::Datetime(2017,  9, 27, 21,  1, 0), 8);
-  ExpenseElem e1111_1 = ExpenseElem(ExpenseElem::Datetime(2015, 12,  1, 23,  2, 0), 9);
+  CREATE_EXPENSE_D(e1_1   , Datetime(2015,  1, 11,  1, 21, 0), 1);
+  CREATE_EXPENSE_D(e1_2   , Datetime(2015,  7,  5,  6, 19, 0), 2);
+  CREATE_EXPENSE_D(e11_1  , Datetime(2014,  2, 21, 13, 34, 0), 3);
+  CREATE_EXPENSE_D(e11_2  , Datetime(2015,  1,  4,  3, 35, 0), 4);
+  CREATE_EXPENSE_D(e12_1  , Datetime(2015,  4,  1,  9, 13, 0), 5);
+  CREATE_EXPENSE_D(e111_1 , Datetime(2017,  4,  6,  7, 56, 0), 6);
+  CREATE_EXPENSE_D(e112_1 , Datetime(2015,  1,  1,  1,  7, 0), 7);
+  CREATE_EXPENSE_D(e112_2 , Datetime(2017,  9, 27, 21,  1, 0), 8);
+  CREATE_EXPENSE_D(e1111_1, Datetime(2015, 12,  1, 23,  2, 0), 9);
 
-  category->expenses.push_back(e1_1);
-  category->expenses.push_back(e1_2);
-  cat11->expenses.push_back(e11_1);
-  cat11->expenses.push_back(e11_2);
-  cat12->expenses.push_back(e12_1);
-  cat111->expenses.push_back(e111_1);
-  cat112->expenses.push_back(e112_1);
-  cat112->expenses.push_back(e112_2);
-  cat1111->expenses.push_back(e1111_1);
+  LINK_EXPENSE(category, e1_1);
+  LINK_EXPENSE(category, e1_2);
+  LINK_EXPENSE(cat11, e11_1);
+  LINK_EXPENSE(cat11, e11_2);
+  LINK_EXPENSE(cat12, e12_1);
+  LINK_EXPENSE(cat111, e111_1);
+  LINK_EXPENSE(cat112, e112_1);
+  LINK_EXPENSE(cat112, e112_2);
+  LINK_EXPENSE(cat1111, e1111_1);
 
-  auto Expenses = GetAllExpenses(category, "Cat11");
-  auto i = Expenses.begin();
-  REQUIRE(0 == std::string(e112_2.ToStr()).compare(*i));
-  ++i;
-  REQUIRE(0 == std::string(e111_1.ToStr()).compare(*i));
-  ++i;
-  REQUIRE(0 == std::string(e1111_1.ToStr()).compare(*i));
-  ++i;
-  REQUIRE(0 == std::string(e11_2.ToStr()).compare(*i));
-  ++i;
-  REQUIRE(0 == std::string(e112_1.ToStr()).compare(*i));
-  ++i;
-  REQUIRE(0 == std::string(e11_1.ToStr()).compare(*i));
-  ++i;
-  REQUIRE(i == Expenses.end());
+  UtVerifyExpenses({e112_2.ToStr(), e111_1.ToStr(), e1111_1.ToStr(),
+    e11_2.ToStr(), e112_1.ToStr(), e11_1.ToStr()},
+    GetAllExpenses(category, "Cat11"));
 }
 
-extern void Buy(CategoriesElem* categories, const std::string &selectedCategory, const unsigned int cost, const std::string &info);
+extern void Buy(CategoriesElem* categories, const std::string &selectedCategory, const unsigned int cost, const std::string &info, struct tm * now);
 TEST_CASE( "Buy.rating", "[internal]" ) {
   CREATE_ROOT_CATEGORY_R(cat1, "Cat1", 2);
   CREATE_LEAF_CATEGORY_R(  cat11,   cat1,   "Cat11", 15);
@@ -286,9 +306,44 @@ TEST_CASE( "Buy.rating", "[internal]" ) {
   LINK_ROOT_LEAF( cat11,  cat111);
   LINK_ROOT_LEAF(cat111, cat1111);
 
-  Buy(cat111, "Cat1111", 7, "");
+  Buy(cat111, "Cat1111", 7, "", utils::Now());
   CHECK( 3 ==    cat1->rating);
   CHECK(16 ==   cat11->rating);
   CHECK( 5 ==  cat111->rating);
   CHECK(10 == cat1111->rating);
 }
+
+TEST_CASE( "Buy.logic", "[internal]" ) {
+  CREATE_ROOT_CATEGORY(cat, "Cat");
+  CREATE_LEAF_CATEGORY(cat0,  cat, "Cat0");
+  CREATE_LEAF_CATEGORY(cat1, cat0, "Cat1");
+  CREATE_LEAF_CATEGORY(cat2, cat0, "Cat2");
+  CREATE_LEAF_CATEGORY(cat3, cat0, "Cat3");
+
+  LINK_ROOT_LEAF( cat, cat0);
+  LINK_ROOT_LEAF(cat0, cat1);
+  LINK_ROOT_LEAF(cat0, cat2);
+  LINK_ROOT_LEAF(cat0, cat3);
+
+  UtVerifyExpenses({}, GetExpenses( cat, "Cat0"));
+  UtVerifyExpenses({}, GetExpenses(cat0, "Cat1"));
+  UtVerifyExpenses({}, GetExpenses(cat0, "Cat2"));
+  UtVerifyExpenses({}, GetExpenses(cat0, "Cat3"));
+
+  auto now = utils::Now();
+  CREATE_EXPENSE_D(exp1, Datetime(now), 35);
+  Buy(cat0, "", 35, "", now);
+  UtVerifyExpenses({exp1.ToStr()}, GetExpenses( cat, "Cat0"));
+  UtVerifyExpenses({}            , GetExpenses(cat0, "Cat1"));
+  UtVerifyExpenses({}            , GetExpenses(cat0, "Cat2"));
+  UtVerifyExpenses({}            , GetExpenses(cat0, "Cat3"));
+
+  CREATE_EXPENSE_D(exp2, Datetime(now), 76);
+  Buy(cat0, "Cat3", 76, "", now);
+  UtVerifyExpenses({exp1.ToStr()}, GetExpenses( cat, "Cat0"));
+  UtVerifyExpenses({}            , GetExpenses(cat0, "Cat1"));
+  UtVerifyExpenses({}            , GetExpenses(cat0, "Cat2"));
+  UtVerifyExpenses({exp2.ToStr()}, GetExpenses(cat0, "Cat3"));
+}
+
+// TODO: void GetAllNestedExpenses(std::list<ExpenseElem> &expenses, const CategoriesElem* category);

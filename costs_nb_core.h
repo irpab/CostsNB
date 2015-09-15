@@ -19,15 +19,6 @@ struct ExpenseElem
 {
     struct Datetime
     {
-        Datetime()
-        {
-            y  = 2000;
-            mn = 1;
-            d  = 1;
-            h  = 0;
-            m  = 0;
-            s  = 0;
-        }
         Datetime(unsigned short y_, unsigned short mn_, unsigned short d_,
                  unsigned short h_, unsigned short m_, unsigned short s_) :
             y(y_), mn(mn_), d(d_), h(h_), m(m_), s(s_)

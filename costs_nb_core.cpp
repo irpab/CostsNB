@@ -17,14 +17,14 @@ void CostsNbCore::ConvertJsonToCategories(CategoriesElem* parent_category, const
   Json::Value subCategories = jsonCategories[index]["sub_categories"];
   CategoriesElem* newSubCategory = new CategoriesElem(currentCat, parent_category, currentCatRating);
   for (unsigned int i = 0; i < jsonCategories[index]["expenses"].size(); i++) {
-    ExpenseElem::Datetime datetime;
     Json::Value jsonDatetime = jsonCategories[index]["expenses"][i]["datetime"];
-    datetime.y  = jsonDatetime["y"].asInt();
-    datetime.mn = jsonDatetime["mn"].asInt();
-    datetime.d  = jsonDatetime["d"].asInt();
-    datetime.h  = jsonDatetime["h"].asInt();
-    datetime.m  = jsonDatetime["m"].asInt();
-    datetime.s  = jsonDatetime["s"].asInt();
+    auto y  = jsonDatetime["y"].asInt();
+    auto mn = jsonDatetime["mn"].asInt();
+    auto d  = jsonDatetime["d"].asInt();
+    auto h  = jsonDatetime["h"].asInt();
+    auto m  = jsonDatetime["m"].asInt();
+    auto s  = jsonDatetime["s"].asInt();
+    ExpenseElem::Datetime datetime(y, mn, d, h, m, s);
     Json::Value jsonInfo = jsonCategories[index]["expenses"][i]["info"];
     std::string info = jsonInfo.asString();
     newSubCategory->expenses.push_back(ExpenseElem(datetime, jsonCategories[index]["expenses"][i]["cost"].asInt(), info));
@@ -273,7 +273,7 @@ std::list<std::string> GetAllExpenses(CategoriesElem* categories, const std::str
     return expenses_str;
 }
 
-void Buy(CategoriesElem* categories, const std::string &selected_category, const unsigned int cost, const std::string &info)
+void Buy(CategoriesElem* categories, const std::string &selected_category, const unsigned int cost, const std::string &info, struct tm * now)
 {
     CategoriesElem* category = nullptr;
     if (selected_category.empty())
@@ -284,13 +284,19 @@ void Buy(CategoriesElem* categories, const std::string &selected_category, const
     if (category == nullptr)
         return;
 
-    category->expenses.push_back(ExpenseElem(utils::Now(), cost, info));
+    category->expenses.push_back(ExpenseElem(now, cost, info));
 
     while (category != nullptr) {
         category->rating++;
         category->sub_categories.sort(CompareCategoriesByRating);
         category = category->parent_category;
     }
+}
+
+void Buy(CategoriesElem* categories, const std::string &selected_category, const unsigned int cost, const std::string &info)
+{
+    auto now = utils::Now();
+    Buy(categories, selected_category, cost, info, now);
 }
 
 /////////////////////////////
