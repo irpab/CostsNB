@@ -114,6 +114,12 @@ struct CategoriesElem
 };
 
 
+class CategoriesToExtDbConverter {
+public:
+    virtual void CategoriesToExtDb
+};
+
+
 class CostsNbCore
 {
 public:
