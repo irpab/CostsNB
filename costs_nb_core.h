@@ -114,11 +114,30 @@ struct CategoriesElem
 };
 
 
+// TODO: instead of CategoriesElem use Categories with meta info like version
 class CategoriesToExtDbConverter {
 public:
-    virtual void CategoriesToExtDb
+    virtual void CategoriesToExtDb(CategoriesElem *categories) = 0;
+    virtual CategoriesElem * ExtDbToCategories() = 0;
 };
 
+// TODO: not core functionality, move to other src files
+class CategoriesToJsonConverter {
+public:
+    // TODO: move semantics
+    std::string CategoriesToJsonStr(CategoriesElem *categories);
+    CategoriesElem * JsonStrToCategories(const std::string &json_str_categories);
+};
+
+class CategoriesToJsonFileConverter final : public CategoriesToExtDbConverter {
+public:
+    CategoriesToJsonFileConverter(const std::string &json_db_filename);
+    void CategoriesToExtDb(CategoriesElem *categories) override;
+    CategoriesElem * ExtDbToCategories() override;
+private:
+    CategoriesToJsonConverter categories_to_json_converter; // TODO: DepInj
+    std::string json_db_filename;
+};
 
 class CostsNbCore
 {

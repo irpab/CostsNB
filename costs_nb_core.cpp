@@ -7,6 +7,112 @@
 #include "costs_nb_core.h"
 #include "costsnb_tcp_transport.h"
 
+// TODO: not core functionality, move to other src files
+CategoriesToJsonFileConverter::CategoriesToJsonFileConverter(const std::string &json_db_filename_)
+  : json_db_filename(json_db_filename_)
+{
+}
+
+void CategoriesToJsonFileConverter::CategoriesToExtDb(CategoriesElem *categories)
+{
+    std::ofstream json_db_file_stream;
+    json_db_file_stream.open(json_db_filename);
+    json_db_file_stream << categories_to_json_converter.CategoriesToJsonStr(categories) << std::endl;
+    json_db_file_stream.close();
+}
+
+CategoriesElem * CategoriesToJsonFileConverter::ExtDbToCategories()
+{
+    if (utils::FileExists(json_db_filename)) {
+        std::ifstream json_db_file_stream(json_db_filename, std::ifstream::binary);
+        json_db_file_stream.seekg(0, std::ios::end);
+        size_t size = json_db_file_stream.tellg();
+        std::string json_str(size, ' ');
+        json_db_file_stream.seekg(0);
+        json_db_file_stream.read(&json_str[0], size); 
+        json_db_file_stream.close();
+
+        return categories_to_json_converter.JsonStrToCategories(json_str);
+    }
+
+    return nullptr;
+}
+
+// TODO: refactor
+void ConvertCategoriesToJson(Json::Value &rootJson, const CategoriesElem* categories)
+{
+    unsigned int j = 0;
+    for (auto i = categories->sub_categories.begin();
+            i != categories->sub_categories.end(); ++i, ++j) {
+        rootJson["sub_categories"][j]["name"] = (*i)->category_name;
+        rootJson["sub_categories"][j]["rating"] = (*i)->rating;
+        unsigned int k = 0;
+        rootJson["sub_categories"][j]["expenses"] = Json::Value(Json::arrayValue);
+        for (auto expense = (*i)->expenses.begin(); expense != (*i)->expenses.end(); ++expense) {
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["y"]  = expense->datetime.y;
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["mn"] = expense->datetime.mn;
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["d"]  = expense->datetime.d;
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["h"]  = expense->datetime.h;
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["m"]  = expense->datetime.m;
+            rootJson["sub_categories"][j]["expenses"][k]["datetime"]["s"]  = expense->datetime.s;
+            rootJson["sub_categories"][j]["expenses"][k]["cost"] = expense->cost;
+            rootJson["sub_categories"][j]["expenses"][k]["info"] = expense->info;
+            k++;
+        }
+        Json::Value Sub_categories;
+        ConvertCategoriesToJson(Sub_categories, *i);
+        if (Sub_categories.isNull())
+            rootJson["sub_categories"][j]["sub_categories"] = Json::Value(Json::arrayValue);
+        else
+            rootJson["sub_categories"][j]["sub_categories"] = Sub_categories["sub_categories"];
+    }
+}
+
+// TODO: refactor
+void ConvertJsonToCategories(CategoriesElem* parent_category, const unsigned int &index, const Json::Value &jsonCategories)
+{
+  if (index == jsonCategories.size())
+    return;
+  std::string currentCat = jsonCategories[index]["name"].asString();
+  unsigned int currentCatRating = jsonCategories[index]["rating"].asInt();
+  Json::Value subCategories = jsonCategories[index]["sub_categories"];
+  CategoriesElem* newSubCategory = new CategoriesElem(currentCat, parent_category, currentCatRating);
+  for (unsigned int i = 0; i < jsonCategories[index]["expenses"].size(); i++) {
+    Json::Value jsonDatetime = jsonCategories[index]["expenses"][i]["datetime"];
+    auto y  = jsonDatetime["y"].asInt();
+    auto mn = jsonDatetime["mn"].asInt();
+    auto d  = jsonDatetime["d"].asInt();
+    auto h  = jsonDatetime["h"].asInt();
+    auto m  = jsonDatetime["m"].asInt();
+    auto s  = jsonDatetime["s"].asInt();
+    ExpenseElem::Datetime datetime(y, mn, d, h, m, s);
+    Json::Value jsonInfo = jsonCategories[index]["expenses"][i]["info"];
+    std::string info = jsonInfo.asString();
+    newSubCategory->expenses.push_back(ExpenseElem(datetime, jsonCategories[index]["expenses"][i]["cost"].asInt(), info));
+  }
+  parent_category->sub_categories.push_back(newSubCategory);
+  ConvertJsonToCategories(newSubCategory, 0, subCategories);
+  ConvertJsonToCategories(parent_category, index+1, jsonCategories);
+}
+
+// TODO: move semantics
+std::string CategoriesToJsonConverter::CategoriesToJsonStr(CategoriesElem *root_category)
+{
+    Json::Value json_categories;
+    json_categories["version"] = SUPPORTED_DB_VERSION;
+    ConvertCategoriesToJson(json_categories, root_category);
+    return json_categories.toStyledString();
+}
+
+CategoriesElem * CategoriesToJsonConverter::JsonStrToCategories(const std::string &json_str_categories)
+{
+    CategoriesElem* root_category = new CategoriesElem("Root Category", nullptr);
+    Json::Value json_categories(json_str_categories);
+    ConvertJsonToCategories(root_category, 0, json_categories["sub_categories"]);
+    return root_category;
+}
+
+
 //////// TODO: refactor all below
 void CostsNbCore::ConvertJsonToCategories(CategoriesElem* parent_category, const unsigned int &index, const Json::Value &jsonCategories)
 {
