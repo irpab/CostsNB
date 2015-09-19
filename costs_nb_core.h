@@ -125,17 +125,24 @@ public:
 class CategoriesToJsonConverter {
 public:
     // TODO: move semantics
+    virtual std::string CategoriesToJsonStr(CategoriesElem *categories) = 0;
+    virtual CategoriesElem * JsonStrToCategories(const std::string &json_str_categories) = 0;
+};
+
+class CategoriesToJsonConverterJsoncppLib : public CategoriesToJsonConverter {
+public:
+    // TODO: move semantics
     std::string CategoriesToJsonStr(CategoriesElem *categories);
     CategoriesElem * JsonStrToCategories(const std::string &json_str_categories);
 };
 
 class CategoriesToJsonFileConverter final : public CategoriesToExtDbConverter {
 public:
-    CategoriesToJsonFileConverter(const std::string &json_db_filename);
+    CategoriesToJsonFileConverter(const std::string &json_db_filename, CategoriesToJsonConverter *categories_to_json_converter);
     void CategoriesToExtDb(CategoriesElem *categories) override;
     CategoriesElem * ExtDbToCategories() override;
 private:
-    CategoriesToJsonConverter categories_to_json_converter; // TODO: DepInj
+    CategoriesToJsonConverter *categories_to_json_converter;
     std::string json_db_filename;
 };
 

@@ -8,8 +8,8 @@
 #include "costsnb_tcp_transport.h"
 
 // TODO: not core functionality, move to other src files
-CategoriesToJsonFileConverter::CategoriesToJsonFileConverter(const std::string &json_db_filename_)
-  : json_db_filename(json_db_filename_)
+CategoriesToJsonFileConverter::CategoriesToJsonFileConverter(const std::string &json_db_filename_, CategoriesToJsonConverter *categories_to_json_converter_)
+  : json_db_filename(json_db_filename_), categories_to_json_converter(categories_to_json_converter_)
 {
 }
 
@@ -17,7 +17,7 @@ void CategoriesToJsonFileConverter::CategoriesToExtDb(CategoriesElem *categories
 {
     std::ofstream json_db_file_stream;
     json_db_file_stream.open(json_db_filename);
-    json_db_file_stream << categories_to_json_converter.CategoriesToJsonStr(categories) << std::endl;
+    json_db_file_stream << categories_to_json_converter->CategoriesToJsonStr(categories) << std::endl;
     json_db_file_stream.close();
 }
 
@@ -32,7 +32,7 @@ CategoriesElem * CategoriesToJsonFileConverter::ExtDbToCategories()
         json_db_file_stream.read(&json_str[0], size); 
         json_db_file_stream.close();
 
-        return categories_to_json_converter.JsonStrToCategories(json_str);
+        return categories_to_json_converter->JsonStrToCategories(json_str);
     }
 
     return nullptr;
@@ -96,7 +96,7 @@ void ConvertJsonToCategories(CategoriesElem* parent_category, const unsigned int
 }
 
 // TODO: move semantics
-std::string CategoriesToJsonConverter::CategoriesToJsonStr(CategoriesElem *root_category)
+std::string CategoriesToJsonConverterJsoncppLib::CategoriesToJsonStr(CategoriesElem *root_category)
 {
     Json::Value json_categories;
     json_categories["version"] = SUPPORTED_DB_VERSION;
@@ -104,10 +104,12 @@ std::string CategoriesToJsonConverter::CategoriesToJsonStr(CategoriesElem *root_
     return json_categories.toStyledString();
 }
 
-CategoriesElem * CategoriesToJsonConverter::JsonStrToCategories(const std::string &json_str_categories)
+CategoriesElem * CategoriesToJsonConverterJsoncppLib::JsonStrToCategories(const std::string &json_str_categories)
 {
     CategoriesElem* root_category = new CategoriesElem("Root Category", nullptr);
-    Json::Value json_categories(json_str_categories);
+    std::istringstream json_str_categories_stream(json_str_categories);
+    Json::Value json_categories;
+    json_str_categories_stream >> json_categories;
     ConvertJsonToCategories(root_category, 0, json_categories["sub_categories"]);
     return root_category;
 }
