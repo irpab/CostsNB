@@ -26,7 +26,12 @@ Costs_nb_qml_proxy::Costs_nb_qml_proxy(QQmlContext *qmlContext)
     : _qmlContext(qmlContext)
 {
     QString dbLocation = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
-    costs_nb_core = new CostsNbCore(QStr2str(dbLocation + "/" + COSTS_NB_DB_NAME), QStr2str(dbLocation + "/" + COSTS_NB_CFG_NAME));
+    std::string dbFullName = QStr2str(dbLocation + "/" + COSTS_NB_DB_NAME);
+    std::string cfgFullName = QStr2str(dbLocation + "/" + COSTS_NB_CFG_NAME);
+    CategoriesToJsonFileConverter * categories_to_db_converter =
+      new CategoriesToJsonFileConverter(dbFullName,
+        new CategoriesToJsonConverterJsoncppLib());
+    costs_nb_core = new CostsNbCore(categories_to_db_converter, cfgFullName);
     update_qml_categoriesModel();
     update_qml_showExpensesModel("");
 }

@@ -8,9 +8,6 @@
 #include <ctime>
 #include <iomanip>
 
-#include "json/json-forwards.h"
-#include "json/json.h"
-
 #include "utils.h"
 
 #define SUPPORTED_DB_VERSION 1
@@ -121,35 +118,11 @@ public:
     virtual CategoriesElem * ExtDbToCategories() = 0;
 };
 
-// TODO: not core functionality, move to other src files
-class CategoriesToJsonConverter {
-public:
-    // TODO: move semantics
-    virtual std::string CategoriesToJsonStr(CategoriesElem *categories) = 0;
-    virtual CategoriesElem * JsonStrToCategories(const std::string &json_str_categories) = 0;
-};
-
-class CategoriesToJsonConverterJsoncppLib : public CategoriesToJsonConverter {
-public:
-    // TODO: move semantics
-    std::string CategoriesToJsonStr(CategoriesElem *categories);
-    CategoriesElem * JsonStrToCategories(const std::string &json_str_categories);
-};
-
-class CategoriesToJsonFileConverter final : public CategoriesToExtDbConverter {
-public:
-    CategoriesToJsonFileConverter(const std::string &json_db_filename, CategoriesToJsonConverter *categories_to_json_converter);
-    void CategoriesToExtDb(CategoriesElem *categories) override;
-    CategoriesElem * ExtDbToCategories() override;
-private:
-    CategoriesToJsonConverter *categories_to_json_converter;
-    std::string json_db_filename;
-};
 
 class CostsNbCore
 {
 public:
-    CostsNbCore(const std::string &db_file_name, const std::string &cfg_file_name);
+    CostsNbCore(CategoriesToExtDbConverter *categories_to_ext_db_converter, const std::string &cfg_file_name);
     ~CostsNbCore();
 
     std::tuple<std::list<std::string>, std::string> GetCurrentCategories();
@@ -165,16 +138,20 @@ public:
 
 private:
     CategoriesElem *categories;
-    std::string db_file_name;
+    CategoriesToExtDbConverter *categories_to_ext_db_converter;
     std::string cfg_file_name;
 
-    // TODO: refactor working with json lib
-    CategoriesElem* ReadCategoriesFromDb(const std::string &dbFile);
-    void ConvertJsonToCategories(CategoriesElem* parentCategory, const unsigned int &index, const Json::Value &jsonCategories);
-    void ConvertCategoriesToJson(Json::Value &rootJson, const CategoriesElem* categories);
-    void WriteCategoriesToDb(const CategoriesElem* rootCategory, const std::string &db_file_name);
     // TODO: refactor working with server
     void SyncDbWithServer();
 };
+
+bool operator==(const ExpenseElem::Datetime& e1, const ExpenseElem::Datetime& e2);
+bool operator!=(const ExpenseElem::Datetime& e1, const ExpenseElem::Datetime& e2);
+
+bool operator==(const ExpenseElem& e1, const ExpenseElem& e2);
+bool operator!=(const ExpenseElem& e1, const ExpenseElem& e2);
+
+bool operator==(const CategoriesElem& e1, const CategoriesElem& e2);
+bool operator!=(const CategoriesElem& e1, const CategoriesElem& e2);
 
 #endif // COSTS_NB_CORE_H

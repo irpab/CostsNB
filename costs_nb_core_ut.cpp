@@ -1,9 +1,11 @@
 #define CATCH_CONFIG_MAIN
 #include <vector>
+#include <cstdio>
 
 #include "catch.hpp"
 
 #include "costs_nb_core.h"
+#include "categories_to_json_converter.h"
 
 #define CREATE_LEAF_CATEGORY_R(VAR, ROOT, NAME, RATING) CategoriesElem* VAR = new CategoriesElem(NAME, ROOT, RATING)
 #define CREATE_ROOT_CATEGORY_R(VAR, NAME, RATING) CREATE_LEAF_CATEGORY_R(VAR, nullptr, NAME, RATING)
@@ -15,6 +17,28 @@
 #define CREATE_EXPENSE(VAR, COST) CREATE_EXPENSE_D(VAR, Datetime(1, 1, 1, 1, 1, 1), COST)
 #define CREATE_EXPENSE_D(VAR, DATE, COST) ExpenseElem VAR = ExpenseElem(ExpenseElem::DATE, COST)
 #define LINK_EXPENSE(CAT, EXP) CAT->expenses.push_back(EXP);
+
+extern CategoriesElem * GetRootCategory(CategoriesElem * const category);
+TEST_CASE( "GetRootCategory", "[internal]" ) {
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+  CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
+  CREATE_LEAF_CATEGORY(cat111, cat11, "Cat111");
+  CREATE_LEAF_CATEGORY(cat112, cat11, "Cat112");
+  CREATE_LEAF_CATEGORY(cat1111, cat111, "Cat1111");
+  LINK_ROOT_LEAF(category, cat11);
+  LINK_ROOT_LEAF(category, cat12);
+  LINK_ROOT_LEAF(cat11, cat111);
+  LINK_ROOT_LEAF(cat11, cat112);
+  LINK_ROOT_LEAF(cat111, cat1111);
+
+  CHECK(category == GetRootCategory(category));
+  CHECK(category == GetRootCategory(cat11));
+  CHECK(category == GetRootCategory(cat12));
+  CHECK(category == GetRootCategory(cat111));
+  CHECK(category == GetRootCategory(cat112));
+  CHECK(category == GetRootCategory(cat1111));
+}
 
 extern bool ValidateCategoryName(const std::string &newCategory);
 TEST_CASE( "ValidateCategoryName", "[internal]" ) {
@@ -140,7 +164,7 @@ TEST_CASE( "AddSubCategory", "[internal]" ) {
   REQUIRE(!AddSubCategory(category, "Cat13"));
 }
 
-TEST_CASE( "MonthNumToStr", "[internal]" ) {
+TEST_CASE( "MonthNumToStr", "[utils]" ) {
   CHECK(COMPARE_STRINGS("Jan", utils::MonthNumToStr( 1)));
   CHECK(COMPARE_STRINGS("Feb", utils::MonthNumToStr( 2)));
   CHECK(COMPARE_STRINGS("Mar", utils::MonthNumToStr( 3)));
@@ -157,7 +181,7 @@ TEST_CASE( "MonthNumToStr", "[internal]" ) {
   CHECK(COMPARE_STRINGS("---", utils::MonthNumToStr( 0)));
 }
 
-TEST_CASE( "MonthStrToNum", "[internal]" ) {
+TEST_CASE( "MonthStrToNum", "[utils]" ) {
   CHECK(utils::MonthStrToNum("xxxxx") ==  0);
   CHECK(utils::MonthStrToNum("xxx") ==  0);
   CHECK(utils::MonthStrToNum("")    ==  0);
@@ -351,15 +375,6 @@ TEST_CASE( "Buy.logic", "[internal]" ) {
 
 // Converters UT
 
-
-bool operator==(const ExpenseElem::Datetime& e1, const ExpenseElem::Datetime& e2) {
-  return !( (e1 > e2) || (e2 > e1) );
-}
-
-bool operator!=(const ExpenseElem::Datetime& e1, const ExpenseElem::Datetime& e2) {
-  return !(e1 == e2);
-}
-
 TEST_CASE( "ExpenseElem::Datetime.==", "[internal]" ) {
   ExpenseElem::Datetime d1(2015,  1, 11,  1, 21, 0);
   ExpenseElem::Datetime d2(2015,  1, 11,  1, 21, 0);
@@ -374,23 +389,6 @@ TEST_CASE( "ExpenseElem::Datetime.==", "[internal]" ) {
   CHECK(d4 != d3);
 }
 
-bool operator==(const ExpenseElem& e1, const ExpenseElem& e2) {
-  if (e1.datetime != e2.datetime)
-    return false;
-
-  if (e1.cost != e2.cost)
-    return false;
-
-  if (!COMPARE_STRINGS(e1.info, e2.info))
-    return false;
-
-  return true;
-}
-
-bool operator!=(const ExpenseElem& e1, const ExpenseElem& e2) {
-  return !(e1 == e2);
-}
-
 TEST_CASE( "ExpenseElem.==", "[internal]" ) {
   CREATE_EXPENSE_D(e1, Datetime(2015,  1, 11,  1, 21, 0), 7);
   CREATE_EXPENSE_D(e2, Datetime(2015,  1, 11,  1, 21, 0), 7);
@@ -403,51 +401,6 @@ TEST_CASE( "ExpenseElem.==", "[internal]" ) {
   CHECK(e3 != e1);
   CHECK(e1 != e4);
   CHECK(e3 != e4);
-}
-
-bool operator!=(const CategoriesElem& e1, const CategoriesElem& e2);
-bool operator==(const CategoriesElem& e1, const CategoriesElem& e2) {
-  std::cout << "compare " << e1.category_name << " and " << e2.category_name << std::endl;
-  if (!COMPARE_STRINGS(e1.category_name, e2.category_name))
-    return false;
-
-  std::cout << "rating " << e1.rating << " and " << e2.rating << std::endl;
-  if (e1.rating != e2.rating)
-    return false;
-
-  std::cout << "sub_categories.size " << e1.sub_categories.size() << " and " << e2.sub_categories.size() << std::endl;
-  if (e1.sub_categories.size() != e2.sub_categories.size())
-    return false;
-  std::cout << std::endl;
-  {
-    auto sub_category1 = e1.sub_categories.begin();
-    auto sub_category2 = e2.sub_categories.begin();
-    for (;sub_category1 != e1.sub_categories.end(), sub_category2 != e2.sub_categories.end();
-        ++sub_category1, ++sub_category2) {
-      if (**sub_category1 != **sub_category2)
-        return false;
-    }
-  }
-  std::cout << "/|\\compare " << e1.category_name << " and " << e2.category_name << std::endl;
-
-  std::cout << "expenses.size " << e1.expenses.size() << " and " << e2.expenses.size() << std::endl;
-  if (e1.expenses.size() != e2.expenses.size())
-    return false;
-  {
-    auto expens1 = e1.expenses.begin();
-    auto expens2 = e2.expenses.begin();
-    for (;expens1 != e1.expenses.end(), expens2 != e2.expenses.end();
-        ++expens1, ++expens2) {
-      if (*expens1 != *expens2)
-        return false;
-    }
-  }
-
-  return true;
-}
-
-bool operator!=(const CategoriesElem& e1, const CategoriesElem& e2) {
-  return !(e1 == e2);
 }
 
 TEST_CASE( "CategoriesElem.==", "[internal]" ) {
@@ -655,8 +608,8 @@ TEST_CASE( "CategoriesElem.==", "[internal]" ) {
   CHECK(*cat1_1 != *cat11_1);
 }
 
-TEST_CASE( "JsoncppLib.CategoriesToJsonStr", "[categories_to_json]" ) {
-  CREATE_ROOT_CATEGORY(category, "Root Category");
+TEST_CASE( "JsoncppLib.CategoriesToJsonStr", "[ext_db_converter]" ) {
+  CREATE_ROOT_CATEGORY(category, "Cat1");
   CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
   CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
   CREATE_LEAF_CATEGORY(cat111, cat11, "Cat111");
@@ -694,5 +647,107 @@ TEST_CASE( "JsoncppLib.CategoriesToJsonStr", "[categories_to_json]" ) {
   CategoriesToJsonConverter *converter_from_json = new CategoriesToJsonConverterJsoncppLib();
   CategoriesElem* category_after_convert = converter_from_json->JsonStrToCategories(json_str);
 
+  CategoriesToJsonConverter *converter_to_json2 = new CategoriesToJsonConverterJsoncppLib();
+  std::string json_str2 = converter_to_json2->CategoriesToJsonStr(category_after_convert);
+
   REQUIRE(*category_after_convert == *category);
+  REQUIRE(COMPARE_STRINGS(json_str, json_str2));
+}
+
+TEST_CASE( "CategoriesToJsonFileConverter", "[ext_db_converter]" ) {
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+  CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
+  CREATE_LEAF_CATEGORY(cat111, cat11, "Cat111");
+  CREATE_LEAF_CATEGORY(cat112, cat11, "Cat112");
+  CREATE_LEAF_CATEGORY(cat1111, cat111, "Cat1111");
+  LINK_ROOT_LEAF(category, cat11);
+  LINK_ROOT_LEAF(category, cat12);
+  LINK_ROOT_LEAF(cat11, cat111);
+  LINK_ROOT_LEAF(cat11, cat112);
+  LINK_ROOT_LEAF(cat111, cat1111);
+
+  CREATE_EXPENSE_D(e1_1   , Datetime(2015,  1, 11,  1, 21, 0), 1);
+  CREATE_EXPENSE_D(e1_2   , Datetime(2015,  7,  5,  6, 19, 0), 2);
+  CREATE_EXPENSE_D(e11_1  , Datetime(2014,  2, 21, 13, 34, 0), 3);
+  CREATE_EXPENSE_D(e11_2  , Datetime(2015,  1,  4,  3, 35, 0), 4);
+  CREATE_EXPENSE_D(e12_1  , Datetime(2015,  4,  1,  9, 13, 0), 5);
+  CREATE_EXPENSE_D(e111_1 , Datetime(2017,  4,  6,  7, 56, 0), 6);
+  CREATE_EXPENSE_D(e112_1 , Datetime(2015,  1,  1,  1,  7, 0), 7);
+  CREATE_EXPENSE_D(e112_2 , Datetime(2017,  9, 27, 21,  1, 0), 8);
+  CREATE_EXPENSE_D(e1111_1, Datetime(2015, 12,  1, 23,  2, 0), 9);
+
+  LINK_EXPENSE(category, e1_1);
+  LINK_EXPENSE(category, e1_2);
+  LINK_EXPENSE(cat11, e11_1);
+  LINK_EXPENSE(cat11, e11_2);
+  LINK_EXPENSE(cat12, e12_1);
+  LINK_EXPENSE(cat111, e111_1);
+  LINK_EXPENSE(cat112, e112_1);
+  LINK_EXPENSE(cat112, e112_2);
+  LINK_EXPENSE(cat1111, e1111_1);
+
+  std::string json_db_filename("/tmp/test.txt");
+
+  CategoriesToJsonConverter *converter_to_json = new CategoriesToJsonConverterJsoncppLib();
+  CategoriesToJsonFileConverter categories_to_json_file_converter(json_db_filename, converter_to_json);
+  categories_to_json_file_converter.CategoriesToExtDb(category);
+
+  CategoriesToJsonConverter *converter_from_json = new CategoriesToJsonConverterJsoncppLib();
+  CategoriesToJsonFileConverter categories_from_json_file_converter(json_db_filename, converter_from_json);
+  CategoriesElem * category_after_convert = categories_from_json_file_converter.ExtDbToCategories();
+
+  REQUIRE(*category_after_convert == *category);
+}
+
+TEST_CASE( "CostsNbCore.Read_Write_DB", "[complex]" ) {
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+  CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
+  CREATE_LEAF_CATEGORY(cat111, cat11, "Cat111");
+  CREATE_LEAF_CATEGORY(cat112, cat11, "Cat112");
+  CREATE_LEAF_CATEGORY(cat1111, cat111, "Cat1111");
+  LINK_ROOT_LEAF(category, cat11);
+  LINK_ROOT_LEAF(category, cat12);
+  LINK_ROOT_LEAF(cat11, cat111);
+  LINK_ROOT_LEAF(cat11, cat112);
+  LINK_ROOT_LEAF(cat111, cat1111);
+
+  CREATE_EXPENSE_D(e1_1   , Datetime(2015,  1, 11,  1, 21, 0), 1);
+  CREATE_EXPENSE_D(e1_2   , Datetime(2015,  7,  5,  6, 19, 0), 2);
+  CREATE_EXPENSE_D(e11_1  , Datetime(2014,  2, 21, 13, 34, 0), 3);
+  CREATE_EXPENSE_D(e11_2  , Datetime(2015,  1,  4,  3, 35, 0), 4);
+  CREATE_EXPENSE_D(e12_1  , Datetime(2015,  4,  1,  9, 13, 0), 5);
+  CREATE_EXPENSE_D(e111_1 , Datetime(2017,  4,  6,  7, 56, 0), 6);
+  CREATE_EXPENSE_D(e112_1 , Datetime(2015,  1,  1,  1,  7, 0), 7);
+  CREATE_EXPENSE_D(e112_2 , Datetime(2017,  9, 27, 21,  1, 0), 8);
+  CREATE_EXPENSE_D(e1111_1, Datetime(2015, 12,  1, 23,  2, 0), 9);
+
+  LINK_EXPENSE(category, e1_1);
+  LINK_EXPENSE(category, e1_2);
+  LINK_EXPENSE(cat11, e11_1);
+  LINK_EXPENSE(cat11, e11_2);
+  LINK_EXPENSE(cat12, e12_1);
+  LINK_EXPENSE(cat111, e111_1);
+  LINK_EXPENSE(cat112, e112_1);
+  LINK_EXPENSE(cat112, e112_2);
+  LINK_EXPENSE(cat1111, e1111_1);
+
+  std::string json_db_filename("/tmp/test.txt");
+
+  CategoriesToJsonFileConverter * init_converter =
+    new CategoriesToJsonFileConverter(json_db_filename,
+      new CategoriesToJsonConverterJsoncppLib());
+  init_converter->CategoriesToExtDb(category);
+
+  CategoriesToJsonFileConverter * converter =
+    new CategoriesToJsonFileConverter(json_db_filename,
+      new CategoriesToJsonConverterJsoncppLib());
+  CostsNbCore * costs_nb_core = new CostsNbCore(converter, "non_exist_cfg_file");
+  std::remove(json_db_filename.c_str());
+  delete costs_nb_core;
+
+  CategoriesElem * category_after_core_work = init_converter->ExtDbToCategories();
+
+  REQUIRE(*category_after_core_work == *category);
 }
