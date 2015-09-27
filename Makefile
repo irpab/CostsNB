@@ -2,41 +2,28 @@ CC=g++
 CFLAGS=-std=c++11
 CC_INCLUDE=-I json/ -I ./
 
-all: core
+all: run_ut
 
 jsoncpp.o:
 	$(CC) $(CFLAGS) $(CC_INCLUDE) -c jsoncpp.cpp -o jsoncpp.o
 
-costsnb_clisrv_decoder.o: gen_xslt
-	g++ -g -std=c++11 -c costsnb_clisrv_decoder.cpp -o costsnb_clisrv_decoder.o
-
-costsnb_clisrv_encoder.o: gen_xslt
-	g++ -g -std=c++11 -c costsnb_clisrv_encoder.cpp -o costsnb_clisrv_encoder.o
-
-costsnb_tcp_transport.o: costsnb_clisrv_decoder.o costsnb_clisrv_encoder.o
-	g++ -g -std=c++11 -c costsnb_tcp_transport.cpp -o costsnb_tcp_transport.o
+categories_to_backend.o:
+	$(CC) $(CFLAGS) $(CC_INCLUDE) -c categories_to_backend.cpp -o categories_to_backend.o
 
 categories_to_json_converter.o:
-	g++ -g -std=c++11 -c categories_to_json_converter.cpp -o categories_to_json_converter.o
+	$(CC) $(CFLAGS) $(CC_INCLUDE) -c categories_to_json_converter.cpp -o categories_to_json_converter.o
 
 utils.o:
 	$(CC) $(CFLAGS) $(CC_INCLUDE) -c utils.cpp -o utils.o
 
-core: jsoncpp.o costsnb_tcp_transport.o utils.o categories_to_json_converter.o
+costs_nb_core.o:
 	$(CC) $(CFLAGS) $(CC_INCLUDE) -c costs_nb_core.cpp -o costs_nb_core.o
 
-ut: core
-	$(CC) $(CFLAGS) $(CC_INCLUDE) categories_to_json_converter.o utils.o costsnb_clisrv_decoder.o costsnb_clisrv_encoder.o costsnb_tcp_transport.o jsoncpp.o costs_nb_core.o costs_nb_core_ut.cpp -o ut
+ut: categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o
+	$(CC) $(CFLAGS) $(CC_INCLUDE) categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o -lrestclient-cpp costs_nb_core_ut.cpp -o ut
 
 run_ut: ut
 	./ut
-
-gen_xslt:
-	saxon-xslt costsnb_clisrv_messages.xml costsnb_clisrv_cpp_hdr_opcodes.xslt > costsnb_clisrv_opcodes.h
-	saxon-xslt costsnb_clisrv_messages.xml costsnb_clisrv_cpp_hdr_structs.xslt > costsnb_clisrv_structs.h
-	saxon-xslt costsnb_clisrv_messages.xml costsnb_clisrv_cpp_decoder.xslt > costsnb_clisrv_decoder.cpp
-	saxon-xslt costsnb_clisrv_messages.xml costsnb_clisrv_cpp_encoder.xslt > costsnb_clisrv_encoder.cpp
-	saxon-xslt costsnb_clisrv_messages.xml costsnb_clisrv_cpp_hdr_encoder.xslt > costsnb_clisrv_encoder.h
 
 clean:
 	rm -f *.o ut

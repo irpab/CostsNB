@@ -7,6 +7,7 @@
 
 #include "costs_nb_core.h"
 #include "categories_to_json_converter.h"
+#include "categories_to_backend.h"
 
 class Costs_nb_qml_proxy : public QObject
 {

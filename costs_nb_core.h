@@ -118,11 +118,16 @@ public:
     virtual CategoriesElem * ExtDbToCategories() = 0;
 };
 
+class CategoriesToBackend {
+public:
+  virtual bool SyncToBackend(CategoriesElem *categories) = 0;
+};
+
 
 class CostsNbCore
 {
 public:
-    CostsNbCore(CategoriesToExtDbConverter *categories_to_ext_db_converter, const std::string &cfg_file_name);
+    CostsNbCore(CategoriesToExtDbConverter *categories_to_ext_db_converter, CategoriesToBackend *categories_to_backend);
     ~CostsNbCore();
 
     std::tuple<std::list<std::string>, std::string> GetCurrentCategories();
@@ -139,10 +144,7 @@ public:
 private:
     CategoriesElem *categories;
     CategoriesToExtDbConverter *categories_to_ext_db_converter;
-    std::string cfg_file_name;
-
-    // TODO: refactor working with server
-    void SyncDbWithServer();
+    CategoriesToBackend *categories_to_backend;
 };
 
 bool operator==(const ExpenseElem::Datetime& e1, const ExpenseElem::Datetime& e2);

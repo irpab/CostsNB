@@ -3,11 +3,6 @@
 
 #include "costs_nb_qml_proxy.h"
 
-const char *QStr2str(const QString qStr)
-{
-    return qStr.toUtf8().constData();
-}
-
 QStringList stdToQStrList(std::list<std::string> stdStrList)
 {
     QStringList qStrList;
@@ -26,12 +21,26 @@ Costs_nb_qml_proxy::Costs_nb_qml_proxy(QQmlContext *qmlContext)
     : _qmlContext(qmlContext)
 {
     QString dbLocation = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
-    std::string dbFullName = QStr2str(dbLocation + "/" + COSTS_NB_DB_NAME);
-    std::string cfgFullName = QStr2str(dbLocation + "/" + COSTS_NB_CFG_NAME);
+    std::string dbFullName = (dbLocation + "/" + COSTS_NB_DB_NAME).toStdString();
+    std::string cfgFullName = (dbLocation + "/" + COSTS_NB_CFG_NAME).toStdString();
+
+    std::ifstream cfgFileStream(cfgFullName, std::ifstream::binary);
+    std::string server_addr;
+    std::string user_name;
+    std::string password;
+    cfgFileStream >> server_addr;
+    cfgFileStream >> user_name;
+    cfgFileStream >> password;
+    cfgFileStream.close();
+
     CategoriesToJsonFileConverter * categories_to_db_converter =
       new CategoriesToJsonFileConverter(dbFullName,
         new CategoriesToJsonConverterJsoncppLib());
-    costs_nb_core = new CostsNbCore(categories_to_db_converter, cfgFullName);
+
+    CategoriesToBackend * categories_to_backend = new CategoriesToRestfulBackend(new CategoriesToJsonConverterJsoncppLib()
+        , server_addr, user_name, password);
+
+    costs_nb_core = new CostsNbCore(categories_to_db_converter, categories_to_backend);
     update_qml_categoriesModel();
     update_qml_showExpensesModel("");
 }
@@ -52,7 +61,7 @@ std::tuple<QStringList, QString> Costs_nb_qml_proxy::current_categories()
 
 bool Costs_nb_qml_proxy::category_selected(const QString &selectedCategory)
 {
-    bool res = costs_nb_core->CategorySelected(QStr2str(selectedCategory));
+    bool res = costs_nb_core->CategorySelected(selectedCategory.toStdString());
     update_qml_categoriesModel();
     return res;
 }
@@ -65,14 +74,14 @@ void Costs_nb_qml_proxy::category_back()
 
 bool Costs_nb_qml_proxy::category_remove(const QString &removingCategory)
 {
-    bool res = costs_nb_core->RemoveCategory(QStr2str(removingCategory));
+    bool res = costs_nb_core->RemoveCategory(removingCategory.toStdString());
     update_qml_categoriesModel();
     return res;
 }
 
 bool Costs_nb_qml_proxy::category_add(const QString &newCategory)
 {
-    bool res = costs_nb_core->CategoryAdd(QStr2str(newCategory));
+    bool res = costs_nb_core->CategoryAdd(newCategory.toStdString());
     if (res)
         update_qml_categoriesModel();
     return res;
@@ -80,7 +89,7 @@ bool Costs_nb_qml_proxy::category_add(const QString &newCategory)
 
 bool Costs_nb_qml_proxy::category_add_sub(const QString &parentCategory, const QString &newCategory)
 {
-    bool res = costs_nb_core->CategoryAddSub(QStr2str(parentCategory), QStr2str(newCategory));
+    bool res = costs_nb_core->CategoryAddSub(parentCategory.toStdString(), newCategory.toStdString());
     if (res)
         update_qml_categoriesModel();
     return res;
@@ -88,7 +97,7 @@ bool Costs_nb_qml_proxy::category_add_sub(const QString &parentCategory, const Q
 
 bool Costs_nb_qml_proxy::category_rename(const QString &selectedCategory, const QString &newName)
 {
-    bool res = costs_nb_core->RenameCategory(QStr2str(selectedCategory), QStr2str(newName));
+    bool res = costs_nb_core->RenameCategory(selectedCategory.toStdString(), newName.toStdString());
     if (res)
         update_qml_categoriesModel();
     return res;
@@ -105,16 +114,16 @@ void Costs_nb_qml_proxy::update_qml_categoriesModel()
 
 void Costs_nb_qml_proxy::update_qml_showExpensesModel(const QString &selectedCategory)
 {
-    _qmlContext->setContextProperty("showExpensesModel", QVariant::fromValue(stdToQStrList(costs_nb_core->GetExpenses(QStr2str(selectedCategory)))));
+    _qmlContext->setContextProperty("showExpensesModel", QVariant::fromValue(stdToQStrList(costs_nb_core->GetExpenses(selectedCategory.toStdString()))));
 }
 
 void Costs_nb_qml_proxy::update_qml_showAllExpensesModel(const QString &selectedCategory)
 {
-    _qmlContext->setContextProperty("showExpensesModel", QVariant::fromValue(stdToQStrList(costs_nb_core->GetAllExpenses(QStr2str(selectedCategory)))));
+    _qmlContext->setContextProperty("showExpensesModel", QVariant::fromValue(stdToQStrList(costs_nb_core->GetAllExpenses(selectedCategory.toStdString()))));
 }
 
 void Costs_nb_qml_proxy::buy(const QString &selectedCategory, const unsigned int &cost, const QString &info)
 {
-    costs_nb_core->Buy(QStr2str(selectedCategory), cost, QStr2str(info));
+    costs_nb_core->Buy(selectedCategory.toStdString(), cost, info.toStdString());
     update_qml_categoriesModel();
 }

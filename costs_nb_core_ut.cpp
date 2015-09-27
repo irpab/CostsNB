@@ -700,6 +700,11 @@ TEST_CASE( "CategoriesToJsonFileConverter", "[ext_db_converter]" ) {
   REQUIRE(*category_after_convert == *category);
 }
 
+class DummyCategoriesToBackend : public CategoriesToBackend {
+public:
+  bool SyncToBackend(CategoriesElem *categories) { return true; }
+};
+
 TEST_CASE( "CostsNbCore.Read_Write_DB", "[complex]" ) {
   CREATE_ROOT_CATEGORY(category, "Cat1");
   CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
@@ -743,7 +748,7 @@ TEST_CASE( "CostsNbCore.Read_Write_DB", "[complex]" ) {
   CategoriesToJsonFileConverter * converter =
     new CategoriesToJsonFileConverter(json_db_filename,
       new CategoriesToJsonConverterJsoncppLib());
-  CostsNbCore * costs_nb_core = new CostsNbCore(converter, "non_exist_cfg_file");
+  CostsNbCore * costs_nb_core = new CostsNbCore(converter, new DummyCategoriesToBackend());
   std::remove(json_db_filename.c_str());
   delete costs_nb_core;
 

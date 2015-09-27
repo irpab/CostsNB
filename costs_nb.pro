@@ -6,13 +6,14 @@ SOURCES += main.cpp \
     costs_nb_qml_proxy.cpp \
     costs_nb_core.cpp \
     jsoncpp.cpp \
-    costsnb_tcp_transport.cpp \
-    costsnb_clisrv_encoder.cpp \
-    costsnb_clisrv_decoder.cpp \
     utils.cpp \
-    categories_to_json_converter.cpp
+    categories_to_json_converter.cpp \
+    categories_to_backend.cpp \
+    restclient.cpp
 
 RESOURCES += qml.qrc
+
+LIBS += -L $$PWD/libcurl/lib/armeabi-v7a -lcurl
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
@@ -25,12 +26,11 @@ HEADERS += \
     costs_nb_core.h \
     json/json.h \
     json/json-forwards.h \
-    costsnb_clisrv_encoder.h \
-    costsnb_clisrv_opcodes.h \
-    costsnb_clisrv_structs.h \
-    costsnb_tcp_transport.h \
     utils.h \
-    categories_to_json_converter.h
+    categories_to_json_converter.h \
+    categories_to_backend.h \
+    restclient-cpp/restclient.h \
+    restclient-cpp/meta.h
 
 DISTFILES += \
     android/AndroidManifest.xml \

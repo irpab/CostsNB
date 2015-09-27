@@ -3,11 +3,11 @@
 #include <iostream>
 #include <memory>
 
-//#include <QDebug>
+#include <QDebug>
 
 #include "costs_nb_core.h"
 #include "categories_to_json_converter.h"
-#include "costsnb_tcp_transport.h"
+#include "categories_to_backend.h"
 
 bool operator==(const ExpenseElem::Datetime& e1, const ExpenseElem::Datetime& e2) {
   return !( (e1 > e2) || (e2 > e1) );
@@ -80,55 +80,6 @@ CategoriesElem * GetRootCategory(CategoriesElem * const category)
         root_category = root_category->parent_category;
     return root_category;
 }
-
-void CostsNbCore::SyncDbWithServer()
-{
-    // read config and get server ip, port, last sync time
-    if (!utils::FileExists(cfg_file_name))
-        return;
-
-    std::ifstream cfgFileStream(cfg_file_name, std::ifstream::binary);
-    std::string ip;
-    std::string portStr;
-    int port;
-    std::string last_time;
-    cfgFileStream >> ip;
-    cfgFileStream >> portStr;
-    std::istringstream(portStr) >> port;
-    cfgFileStream >> last_time;
-    cfgFileStream.close();
-
-    struct tm * t = utils::Now();
-    std::stringstream ss;
-    ss << t->tm_mday;
-
-    if (!last_time.empty() && !last_time.compare(ss.str()))
-        return;
-
-    // try to establish connection and do handshake
-    try {
-      CostsNBTcpTransport tcpTransport(ip, port);
-      Handshake(tcpTransport);
-
-      // convert categories to json and send them to server
-      std::unique_ptr<CategoriesToJsonConverter> converter_to_json(new CategoriesToJsonConverterJsoncppLib());
-      std::string json_str = converter_to_json->CategoriesToJsonStr(GetRootCategory(categories));
-
-      // update last sync time
-      std::ofstream cfgFileStreamOut;
-      cfgFileStreamOut.open(cfg_file_name);
-      cfgFileStreamOut << ip << std::endl;
-      cfgFileStreamOut << port << std::endl;
-      cfgFileStreamOut << t->tm_mday << std::endl;
-      cfgFileStreamOut.close();
-
-      Send_string(tcpTransport, json_str);
-    }
-    catch (std::exception &e) {
-    }
-}
-
-//////// TODO: refactor all above
 
 bool CompareExpensesByDate(const ExpenseElem &e1, const ExpenseElem &e2)
 {
@@ -292,17 +243,16 @@ void Buy(CategoriesElem* categories, const std::string &selected_category, const
 // API
 /////////////////////////////
 
-CostsNbCore::CostsNbCore(CategoriesToExtDbConverter *categories_to_ext_db_converter_, const std::string &cfg_file_name_)
-  : categories_to_ext_db_converter(categories_to_ext_db_converter_)
+CostsNbCore::CostsNbCore(CategoriesToExtDbConverter *categories_to_ext_db_converter_, CategoriesToBackend *categories_to_backend_)
+  : categories_to_ext_db_converter(categories_to_ext_db_converter_), categories_to_backend(categories_to_backend_)
 {
-    cfg_file_name = cfg_file_name_;
     categories = categories_to_ext_db_converter->ExtDbToCategories();
-    SyncDbWithServer();
 }
 
 CostsNbCore::~CostsNbCore()
 {
     categories_to_ext_db_converter->CategoriesToExtDb(GetRootCategory(categories));
+    bool sync_result = categories_to_backend->SyncToBackend(GetRootCategory(categories));
 }
 
 std::tuple<std::list<std::string>, std::string> CostsNbCore::GetCurrentCategories()
