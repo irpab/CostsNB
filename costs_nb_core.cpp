@@ -3,7 +3,7 @@
 #include <iostream>
 #include <memory>
 
-#include <QDebug>
+//#include <QDebug>
 
 #include "costs_nb_core.h"
 #include "categories_to_json_converter.h"

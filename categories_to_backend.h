@@ -12,6 +12,8 @@ public:
     , const std::string &password);
   bool SyncToBackend(CategoriesElem *categories);
 private:
+  std::string PrepareDataForSending(CategoriesElem * categories);
+
   CategoriesToJsonConverter *categories_to_json_converter;
   std::string server_addr;
   std::string user_name;

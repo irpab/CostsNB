@@ -19,8 +19,17 @@ utils.o:
 costs_nb_core.o:
 	$(CC) $(CFLAGS) $(CC_INCLUDE) -c costs_nb_core.cpp -o costs_nb_core.o
 
-ut: categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o
-	$(CC) $(CFLAGS) $(CC_INCLUDE) categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o -lrestclient-cpp costs_nb_core_ut.cpp -o ut
+base64.o:
+	$(CC) $(CFLAGS) $(CC_INCLUDE) -c base64.cpp -o base64.o
+
+miniz.o:
+	$(CC) $(CFLAGS) $(CC_INCLUDE) -c miniz.cpp -o miniz.o
+
+miniz_wrp.o:
+	$(CC) $(CFLAGS) $(CC_INCLUDE) -c miniz_wrp.cpp -o miniz_wrp.o
+
+ut: base64.o miniz.o miniz_wrp.o categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o
+	$(CC) $(CFLAGS) $(CC_INCLUDE) base64.o miniz.o miniz_wrp.o categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o -lrestclient-cpp costs_nb_core_ut.cpp -o ut
 
 run_ut: ut
 	./ut

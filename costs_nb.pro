@@ -9,7 +9,10 @@ SOURCES += main.cpp \
     utils.cpp \
     categories_to_json_converter.cpp \
     categories_to_backend.cpp \
-    restclient.cpp
+    restclient.cpp \
+    miniz_wrp.cpp \
+    miniz.cpp \
+    base64.cpp
 
 RESOURCES += qml.qrc
 
@@ -30,7 +33,10 @@ HEADERS += \
     categories_to_json_converter.h \
     categories_to_backend.h \
     restclient-cpp/restclient.h \
-    restclient-cpp/meta.h
+    restclient-cpp/meta.h \
+    miniz_wrp.h \
+    base64.h \
+    miniz.h
 
 DISTFILES += \
     android/AndroidManifest.xml \

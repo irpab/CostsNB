@@ -6,6 +6,8 @@
 
 #include "costs_nb_core.h"
 #include "categories_to_json_converter.h"
+#include "base64.h"
+#include "miniz_wrp.h"
 
 #define CREATE_LEAF_CATEGORY_R(VAR, ROOT, NAME, RATING) CategoriesElem* VAR = new CategoriesElem(NAME, ROOT, RATING)
 #define CREATE_ROOT_CATEGORY_R(VAR, NAME, RATING) CREATE_LEAF_CATEGORY_R(VAR, nullptr, NAME, RATING)
@@ -755,4 +757,45 @@ TEST_CASE( "CostsNbCore.Read_Write_DB", "[complex]" ) {
   CategoriesElem * category_after_core_work = init_converter->ExtDbToCategories();
 
   REQUIRE(*category_after_core_work == *category);
+}
+
+TEST_CASE( "base64", "[utils]" ) {
+  std::string init_str = "hello { world! \"data\" = 123; }";
+  auto base64_str = base64_encode(reinterpret_cast<const unsigned char*>(init_str.c_str()), init_str.size());
+  auto decoded_str = base64_decode(base64_str);
+  CHECK(COMPARE_STRINGS(init_str, decoded_str));
+}
+
+TEST_CASE( "miniz", "[utils]" ) {
+  std::string init_str = "hello { world! \"data\" = 123; }";
+  auto zip_str = compress_string(init_str);
+  auto decoded_str = decompress_string(zip_str);
+  CHECK(COMPARE_STRINGS(init_str, decoded_str));
+}
+
+
+std::string DeEscapeJsonString(const std::string& input) {
+  std::ostringstream ss;
+  for (auto iter = input.cbegin(); iter != input.cend(); iter++) {
+    switch (*iter) {
+      case '\\': ss << ""; break;
+      default: ss << *iter; break;
+    }
+  }
+  return ss.str();
+}
+
+extern std::string EscapeJsonString(const std::string& input);
+TEST_CASE( "EscapeJsonString", "[utils]" ) {
+  auto json_str = "test test { \"json_data\" = data_test }, { }";
+  auto escaped_str = EscapeJsonString(json_str);
+  auto zipped_str = compress_string(escaped_str);
+  auto base64_str = base64_encode(reinterpret_cast<const unsigned char*>(zipped_str.c_str()), zipped_str.size());
+
+  auto de_base64_str = base64_decode(base64_str);
+  auto de_zipped_str = decompress_string(de_base64_str);
+  auto de_escaped_str = DeEscapeJsonString(de_zipped_str);
+  auto de_json_str = de_escaped_str;
+
+  CHECK(COMPARE_STRINGS(json_str, de_json_str));
 }

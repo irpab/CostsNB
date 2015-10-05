@@ -2,10 +2,13 @@
 #include <sstream>
 
 #include "restclient-cpp/restclient.h"
+#include "miniz_wrp.h"
+#include "base64.h"
+#include "utils.h"
 
 #include "categories_to_backend.h"
 
-#include <QDebug>
+//#include <QDebug>
 
 std::string EscapeJsonString(const std::string& input) {
   std::ostringstream ss;
@@ -40,15 +43,28 @@ CategoriesToRestfulBackend::CategoriesToRestfulBackend(CategoriesToJsonConverter
   RestClient::setAuth(user_name, password);
 }
 
-bool CategoriesToRestfulBackend::SyncToBackend(CategoriesElem *categories)
+std::string CategoriesToRestfulBackend::PrepareDataForSending(CategoriesElem *categories)
 {
   auto json_str = categories_to_json_converter->CategoriesToJsonStr(categories);
+  // auto escaped_str = EscapeJsonString(json_str);
+  auto escaped_str = json_str;
+  auto zipped_str = compress_string(escaped_str);
+  auto base64_str = base64_encode(reinterpret_cast<const unsigned char*>(zipped_str.c_str()), zipped_str.size());
+  
+  return base64_str;
+}
 
+bool CategoriesToRestfulBackend::SyncToBackend(CategoriesElem *categories)
+{
+  auto data = PrepareDataForSending(categories);
   std::string save_db_url = server_addr + "/costs_nb/save_db";
-  std::string json_request = "{\"data\": \"" + EscapeJsonString(json_str) + "\"}";
+  std::string json_request = "{\
+    \"zipped\": true,\
+    \"data\": \"" + data + "\"\
+  }";
 
   RestClient::response r = RestClient::put(save_db_url, "application/json", json_request);
-  qDebug() << "r.code = " << r.code;
+//  qDebug() << "r.code = " << r.code;
 
   if (r.code != 201) {
     return false;
