@@ -18,6 +18,8 @@ RESOURCES += qml.qrc
 
 LIBS += -L $$PWD/libcurl/lib/armeabi-v7a -lcurl
 
+DEFINES += QMAKE_ANDROID_BUILD
+
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
 

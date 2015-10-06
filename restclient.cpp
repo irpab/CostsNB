@@ -10,8 +10,11 @@
 #include "restclient-cpp/restclient.h"
 #include "restclient-cpp/meta.h"
 
-// #include <curl/curl.h>
+#ifndef QMAKE_ANDROID_BUILD
+#include <curl/curl.h>
+#else
 #include <libcurl/inc/curl.h>
+#endif
 #include <cstring>
 #include <string>
 #include <iostream>
