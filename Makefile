@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-std=c++11
-CC_INCLUDE=-I json/ -I ./
+CC_INCLUDE=-I json/ -I restclient-cpp/ -I ./
 
 all: run_ut
 
@@ -28,8 +28,11 @@ miniz.o:
 miniz_wrp.o:
 	$(CC) $(CFLAGS) $(CC_INCLUDE) -c miniz_wrp.cpp -o miniz_wrp.o
 
-ut: base64.o miniz.o miniz_wrp.o categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o
-	$(CC) $(CFLAGS) $(CC_INCLUDE) base64.o miniz.o miniz_wrp.o categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o -lrestclient-cpp costs_nb_core_ut.cpp -o ut
+restclient-cpp.o:
+	$(CC) $(CFLAGS) $(CC_INCLUDE) -c restclient.cpp -o restclient-cpp.o
+
+ut: base64.o miniz.o miniz_wrp.o categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o restclient-cpp.o
+	$(CC) $(CFLAGS) $(CC_INCLUDE) base64.o miniz.o miniz_wrp.o categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o restclient-cpp.o -lcurl costs_nb_core_ut.cpp -o ut
 
 run_ut: ut
 	./ut
