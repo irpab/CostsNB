@@ -31,6 +31,7 @@ Costs_nb_qml_proxy::Costs_nb_qml_proxy(QQmlContext *qmlContext)
     cfgFileStream >> server_addr;
     cfgFileStream >> user_name;
     cfgFileStream >> password;
+    // TODO: get token and provide it to CategoriesToRestfulBackend
     cfgFileStream.close();
 
     CategoriesToJsonFileConverter * categories_to_db_converter =

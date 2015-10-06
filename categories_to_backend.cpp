@@ -40,6 +40,7 @@ CategoriesToRestfulBackend::CategoriesToRestfulBackend(CategoriesToJsonConverter
   , user_name(user_name_)
   , password(password_)
 {
+  // TODO: move auth to SyncToBackend
   RestClient::setAuth(user_name, password);
 }
 
@@ -63,6 +64,7 @@ bool CategoriesToRestfulBackend::SyncToBackend(CategoriesElem *categories)
     \"data\": \"" + data + "\"\
   }";
 
+  // TODO: try token auth first. if 401 - use login pass to get new token and try again
   RestClient::response r = RestClient::put(save_db_url, "application/json", json_request);
 //  qDebug() << "r.code = " << r.code;
 
