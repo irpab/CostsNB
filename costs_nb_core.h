@@ -123,6 +123,13 @@ public:
   virtual bool SyncToBackend(CategoriesElem *categories) = 0;
 };
 
+class AbstractConfig {
+public:
+  virtual std::string GetValue(const std::string& section, const std::string& key) = 0;
+  virtual void SetValue(const std::string& section, const std::string& key, const std::string& value) = 0;
+  virtual ~AbstractConfig() {};
+};
+
 
 class CostsNbCore
 {

@@ -7,9 +7,7 @@
 class CategoriesToRestfulBackend : public CategoriesToBackend {
 public:
   CategoriesToRestfulBackend(CategoriesToJsonConverter *categories_to_json_converter
-    , const std::string &server_addr
-    , const std::string &user_name
-    , const std::string &password);
+    , AbstractConfig* cfg);
   bool SyncToBackend(CategoriesElem *categories);
 private:
   std::string PrepareDataForSending(CategoriesElem * categories);
@@ -18,6 +16,15 @@ private:
   std::string server_addr;
   std::string user_name;
   std::string password;
+  std::string token;
+  AbstractConfig* cfg;
+
+  std::string token_url;
+  std::string save_db_url;
+
+  bool RequestToken();
+  void SetTokenAuth();
+  void SetPasswordAuth();
 };
 
 #endif

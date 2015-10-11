@@ -12,34 +12,25 @@ QStringList stdToQStrList(std::list<std::string> stdStrList)
     return qStrList;
 }
 
-#define REAL_DB_NAME "costs_nb_db.json"
-#define TEST_DB_NAME "test_db.json"
-#define COSTS_NB_DB_NAME REAL_DB_NAME
 #define COSTS_NB_CFG_NAME "costs_nb.cfg"
 
 Costs_nb_qml_proxy::Costs_nb_qml_proxy(QQmlContext *qmlContext)
     : _qmlContext(qmlContext)
 {
     QString dbLocation = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
-    std::string dbFullName = (dbLocation + "/" + COSTS_NB_DB_NAME).toStdString();
     std::string cfgFullName = (dbLocation + "/" + COSTS_NB_CFG_NAME).toStdString();
+    ini_cfg = new IniConfig(cfgFullName);
 
-    std::ifstream cfgFileStream(cfgFullName, std::ifstream::binary);
-    std::string server_addr;
-    std::string user_name;
-    std::string password;
-    cfgFileStream >> server_addr;
-    cfgFileStream >> user_name;
-    cfgFileStream >> password;
-    // TODO: get token and provide it to CategoriesToRestfulBackend
-    cfgFileStream.close();
-
+    QString dbName = QString::fromStdString(ini_cfg->GetValue("database", "db_name"));
+//    qDebug() << "dbName = " << dbName;
+    std::string dbFullName = (dbLocation + "/" + dbName).toStdString();
+//    qDebug() << "dbFullName = " << QString::fromStdString(dbFullName);
     CategoriesToJsonFileConverter * categories_to_db_converter =
       new CategoriesToJsonFileConverter(dbFullName,
         new CategoriesToJsonConverterJsoncppLib());
 
     CategoriesToBackend * categories_to_backend = new CategoriesToRestfulBackend(new CategoriesToJsonConverterJsoncppLib()
-        , server_addr, user_name, password);
+        , ini_cfg);
 
     costs_nb_core = new CostsNbCore(categories_to_db_converter, categories_to_backend);
     update_qml_categoriesModel();
@@ -49,6 +40,7 @@ Costs_nb_qml_proxy::Costs_nb_qml_proxy(QQmlContext *qmlContext)
 Costs_nb_qml_proxy::~Costs_nb_qml_proxy()
 {
     delete costs_nb_core;
+    delete ini_cfg;
 }
 
 std::tuple<QStringList, QString> Costs_nb_qml_proxy::current_categories()

@@ -1,6 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include <vector>
 #include <cstdio>
+#include <fstream>
 
 #include "catch.hpp"
 
@@ -8,6 +9,7 @@
 #include "categories_to_json_converter.h"
 #include "base64.h"
 #include "miniz_wrp.h"
+#include "ini_config.h"
 
 #define CREATE_LEAF_CATEGORY_R(VAR, ROOT, NAME, RATING) CategoriesElem* VAR = new CategoriesElem(NAME, ROOT, RATING)
 #define CREATE_ROOT_CATEGORY_R(VAR, NAME, RATING) CREATE_LEAF_CATEGORY_R(VAR, nullptr, NAME, RATING)
@@ -798,4 +800,43 @@ TEST_CASE( "EscapeJsonString", "[utils]" ) {
   auto de_json_str = de_escaped_str;
 
   CHECK(COMPARE_STRINGS(json_str, de_json_str));
+}
+
+TEST_CASE( "IniConfig", "[utils]" ) {
+  std::string cfg_path = "/tmp/ini_cfg.test";
+
+  std::ofstream cfg(cfg_path);
+  cfg << "[section1]" << std::endl;
+  cfg << "key1 = value1" << std::endl;
+  cfg << "key2 = value2" << std::endl;
+  cfg << "[section2]" << std::endl;
+  cfg << "key1 = value3" << std::endl;
+  cfg.close();
+
+  AbstractConfig* ini_cfg = new IniConfig(cfg_path);
+  CHECK(COMPARE_STRINGS("value1", ini_cfg->GetValue("section1", "key1")));
+  CHECK(COMPARE_STRINGS("value2", ini_cfg->GetValue("section1", "key2")));
+  CHECK(COMPARE_STRINGS(""      , ini_cfg->GetValue("section1", "key3")));
+  CHECK(COMPARE_STRINGS("value3", ini_cfg->GetValue("section2", "key1")));
+  CHECK(COMPARE_STRINGS(""      , ini_cfg->GetValue("section2", "key2")));
+  CHECK(COMPARE_STRINGS(""      , ini_cfg->GetValue("section3", "key1")));
+
+  CHECK(COMPARE_STRINGS("", ini_cfg->GetValue("section1", "key11")));
+  ini_cfg->SetValue("section1", "key11", "value11");
+  CHECK(COMPARE_STRINGS("value11", ini_cfg->GetValue("section1", "key11")));
+
+  ini_cfg->SetValue("section1", "key2", "value22");
+  CHECK(COMPARE_STRINGS("value22", ini_cfg->GetValue("section1", "key2")));
+
+  delete ini_cfg;
+  ini_cfg = nullptr;
+
+  ini_cfg = new IniConfig(cfg_path);
+  CHECK(COMPARE_STRINGS("value1", ini_cfg->GetValue("section1", "key1")));
+  CHECK(COMPARE_STRINGS("value22", ini_cfg->GetValue("section1", "key2")));
+  CHECK(COMPARE_STRINGS(""      , ini_cfg->GetValue("section1", "key3")));
+  CHECK(COMPARE_STRINGS("value3", ini_cfg->GetValue("section2", "key1")));
+  CHECK(COMPARE_STRINGS(""      , ini_cfg->GetValue("section2", "key2")));
+  CHECK(COMPARE_STRINGS(""      , ini_cfg->GetValue("section3", "key1")));
+  CHECK(COMPARE_STRINGS("value11", ini_cfg->GetValue("section1", "key11")));
 }

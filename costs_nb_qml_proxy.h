@@ -5,6 +5,7 @@
 #include <QQmlContext>
 #include <QStringList>
 
+#include "ini_config.h"
 #include "costs_nb_core.h"
 #include "categories_to_json_converter.h"
 #include "categories_to_backend.h"
@@ -18,6 +19,7 @@ class Costs_nb_qml_proxy : public QObject
     void update_qml_categoriesModel();
     std::tuple<QStringList, QString> current_categories();
 
+    AbstractConfig* ini_cfg;
     CostsNbCore *costs_nb_core;
     QQmlContext *_qmlContext;
 public:

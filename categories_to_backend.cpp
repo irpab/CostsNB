@@ -2,6 +2,8 @@
 #include <sstream>
 
 #include "restclient-cpp/restclient.h"
+#include "json/json-forwards.h"
+#include "json/json.h"
 #include "miniz_wrp.h"
 #include "base64.h"
 #include "utils.h"
@@ -9,6 +11,14 @@
 #include "categories_to_backend.h"
 
 //#include <QDebug>
+
+enum HttpCodes {
+  OK = 200
+, CREATED = 201
+, BAD_REQUEST = 400
+, UNAUTHORIZED = 401
+, NOT_FOUND = 404
+};
 
 std::string EscapeJsonString(const std::string& input) {
   std::ostringstream ss;
@@ -32,16 +42,22 @@ std::string EscapeJsonString(const std::string& input) {
 }
 
 CategoriesToRestfulBackend::CategoriesToRestfulBackend(CategoriesToJsonConverter *categories_to_json_converter_
-    , const std::string &server_addr_
-    , const std::string &user_name_
-    , const std::string &password_)
+    , AbstractConfig* cfg_)
   : categories_to_json_converter(categories_to_json_converter_)
-  , server_addr(server_addr_)
-  , user_name(user_name_)
-  , password(password_)
+  , cfg(cfg_)
 {
-  // TODO: move auth to SyncToBackend
-  RestClient::setAuth(user_name, password);
+  server_addr = cfg->GetValue("backend", "server_addr");
+  user_name = cfg->GetValue("backend", "user_name");
+  password = cfg->GetValue("backend", "password");
+  token = cfg->GetValue("backend", "token");
+
+//  qDebug() << "server_addr = " << QString::fromStdString(server_addr);
+//  qDebug() << "user_name = " << QString::fromStdString(user_name);
+//  qDebug() << "password = " << QString::fromStdString(password);
+//  qDebug() << "token = " << QString::fromStdString(token);
+
+  token_url   = server_addr + "/costs_nb/token";
+  save_db_url = server_addr + "/costs_nb/save_db";
 }
 
 std::string CategoriesToRestfulBackend::PrepareDataForSending(CategoriesElem *categories)
@@ -58,19 +74,59 @@ std::string CategoriesToRestfulBackend::PrepareDataForSending(CategoriesElem *ca
 bool CategoriesToRestfulBackend::SyncToBackend(CategoriesElem *categories)
 {
   auto data = PrepareDataForSending(categories);
-  std::string save_db_url = server_addr + "/costs_nb/save_db";
   std::string json_request = "{\
     \"zipped\": true,\
     \"data\": \"" + data + "\"\
   }";
 
-  // TODO: try token auth first. if 401 - use login pass to get new token and try again
+//  qDebug() << "SyncToBackend: try first";
+  SetTokenAuth();
   RestClient::response r = RestClient::put(save_db_url, "application/json", json_request);
-//  qDebug() << "r.code = " << r.code;
+//  qDebug() << "SyncToBackend: r.code " << r.code;
+  if (r.code == HttpCodes::CREATED)
+    return true;
 
-  if (r.code != 201) {
+  if (r.code != HttpCodes::UNAUTHORIZED)
     return false;
-  }
+
+  cfg->SetValue("backend", "token", "");
+
+//  qDebug() << "SyncToBackend: RequestToken";
+  RequestToken();
+  r = RestClient::put(save_db_url, "application/json", json_request);
+//  qDebug() << "SyncToBackend: r.code = " << r.code;
+
+  if (r.code != HttpCodes::CREATED)
+    return false;
 
   return true;
+}
+
+bool CategoriesToRestfulBackend::RequestToken()
+{
+  SetPasswordAuth();
+  RestClient::response r = RestClient::get(token_url);
+//  qDebug() << "SyncToBackend: r.code " << r.code;
+  if (r.code != HttpCodes::OK)
+    return false;
+
+  Json::Value response_json;
+  std::istringstream response_body(r.body);
+  response_body >> response_json;
+
+  token = response_json["token"].asString();
+//  qDebug() << "SyncToBackend: token " << QString::fromStdString(token);
+  cfg->SetValue("backend", "token", token);
+  SetTokenAuth();
+  return true;
+}
+
+void CategoriesToRestfulBackend::SetTokenAuth()
+{
+  RestClient::setAuth(token, "no_password");
+}
+
+void CategoriesToRestfulBackend::SetPasswordAuth()
+{
+  RestClient::setAuth(user_name, password);
 }

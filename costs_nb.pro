@@ -12,7 +12,8 @@ SOURCES += main.cpp \
     restclient.cpp \
     miniz_wrp.cpp \
     miniz.cpp \
-    base64.cpp
+    base64.cpp \
+    ini_config.cpp
 
 RESOURCES += qml.qrc
 
@@ -38,7 +39,10 @@ HEADERS += \
     restclient-cpp/meta.h \
     miniz_wrp.h \
     base64.h \
-    miniz.h
+    miniz.h \
+    ini_config.h \
+    ConvertUTF.h \
+    SimpleIni.h
 
 DISTFILES += \
     android/AndroidManifest.xml \
