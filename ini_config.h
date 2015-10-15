@@ -9,7 +9,7 @@
 
 class IniConfig : public AbstractConfig {
 public:
-  IniConfig(const std::string& ini_file_name);
+  explicit IniConfig(const std::string& ini_file_name);
   ~IniConfig();
 
   std::string GetValue(const std::string& section, const std::string& key);

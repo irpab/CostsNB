@@ -23,7 +23,7 @@ class Costs_nb_qml_proxy : public QObject
     CostsNbCore *costs_nb_core;
     QQmlContext *_qmlContext;
 public:
-    Costs_nb_qml_proxy(QQmlContext *qmlContext = 0);
+    explicit Costs_nb_qml_proxy(QQmlContext *qmlContext = 0);
     ~Costs_nb_qml_proxy();
 
     Q_INVOKABLE bool category_selected(const QString &selectedCategory);

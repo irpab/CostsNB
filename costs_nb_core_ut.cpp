@@ -114,7 +114,7 @@ TEST_CASE( "AddDisplaySubCategoriesPrefix", "[internal]" ) {
   CHECK(COMPARE_STRINGS("Cat1", AddDisplaySubCategoriesPrefix(category_wo_subcat)));
 }
 
-extern std::string RemoveDisplaySubCategoriesPrefix(const std::string categoryName);
+extern std::string RemoveDisplaySubCategoriesPrefix(const std::string& categoryName);
 TEST_CASE( "RemoveDisplaySubCategoriesPrefix", "[internal]" ) {
   CHECK(COMPARE_STRINGS(""      , RemoveDisplaySubCategoriesPrefix("")));
   CHECK(COMPARE_STRINGS(">"     , RemoveDisplaySubCategoriesPrefix(">")));

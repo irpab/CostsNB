@@ -123,7 +123,7 @@ std::string AddDisplaySubCategoriesPrefix(const CategoriesElem* category)
     return has_subcategories_prefix + category->category_name;
 }
 
-std::string RemoveDisplaySubCategoriesPrefix(const std::string category_name)
+std::string RemoveDisplaySubCategoriesPrefix(const std::string& category_name)
 {
     if (category_name.length() > 2 && !category_name.compare(0,2,"> "))
         return category_name.substr(2);
@@ -252,7 +252,7 @@ CostsNbCore::CostsNbCore(CategoriesToExtDbConverter *categories_to_ext_db_conver
 CostsNbCore::~CostsNbCore()
 {
     categories_to_ext_db_converter->CategoriesToExtDb(GetRootCategory(categories));
-    bool sync_result = categories_to_backend->SyncToBackend(GetRootCategory(categories));
+    categories_to_backend->SyncToBackend(GetRootCategory(categories));
 }
 
 std::tuple<std::list<std::string>, std::string> CostsNbCore::GetCurrentCategories()

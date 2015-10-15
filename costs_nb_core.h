@@ -20,7 +20,7 @@ struct ExpenseElem
                  unsigned short h_, unsigned short m_, unsigned short s_) :
             y(y_), mn(mn_), d(d_), h(h_), m(m_), s(s_)
         {}
-        Datetime(const struct tm * t)
+        explicit Datetime(const struct tm * t)
         {
             y  = t->tm_year + 1900;
             mn = t->tm_mon + 1;
@@ -69,11 +69,11 @@ struct ExpenseElem
         datetime(datetime_), cost(cost_), info("")
     {}
 
-    ExpenseElem(const Datetime datetime_, unsigned int cost_) :
+    ExpenseElem(const Datetime& datetime_, unsigned int cost_) :
         datetime(datetime_), cost(cost_), info("")
     {}
 
-    ExpenseElem(const Datetime datetime_, unsigned int cost_, const std::string &info_) :
+    ExpenseElem(const Datetime& datetime_, unsigned int cost_, const std::string &info_) :
         datetime(datetime_), cost(cost_), info(info_)
     {}
 
