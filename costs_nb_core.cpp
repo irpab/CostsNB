@@ -309,7 +309,7 @@ bool CostsNbCore::CategoryAddSub(const std::string &parent_category_name_, const
     return true;
 }
 
-bool CostsNbCore::RemoveCategory(const std::string &removing_category_name_)
+bool RemoveCategory(CategoriesElem* categories, const std::string &removing_category_name_)
 {
     std::string removing_category_name = RemoveDisplaySubCategoriesPrefix(removing_category_name_);
 
@@ -324,6 +324,16 @@ bool CostsNbCore::RemoveCategory(const std::string &removing_category_name_)
     }
 
     categories->sub_categories.remove(category);
+
+    return true;
+}
+
+bool CostsNbCore::RemoveCategory(const std::string &removing_category_name_)
+{
+    bool RemoveRes = ::RemoveCategory(categories, removing_category_name_);
+    if (!RemoveRes)
+        return false;
+
     if (categories->sub_categories.empty())
         CategoryBack();
     return true;

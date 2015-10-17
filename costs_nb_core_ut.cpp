@@ -374,6 +374,30 @@ TEST_CASE( "Buy.logic", "[internal]" ) {
   UtVerifyExpenses({exp2.ToStr()}, GetExpenses(cat0, "Cat3"));
 }
 
+extern bool RemoveCategory(CategoriesElem* categories, const std::string &removing_category_name_);
+TEST_CASE( "RemoveCategory", "[internal]" ) {
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  ADD_SUB_CATEGORY(category, "Cat11");
+  ADD_SUB_CATEGORY(category, "Cat12");
+  ADD_SUB_CATEGORY(category, "Cat13");
+  UtVerifySubCategories({"Cat11", "Cat12", "Cat13"}, category);
+
+  REQUIRE(!RemoveCategory(category, "Cat14"));
+  REQUIRE(!RemoveCategory(category, "Cat1"));
+  REQUIRE(!RemoveCategory(category, ""));
+  UtVerifySubCategories({"Cat11", "Cat12", "Cat13"}, category);
+
+  REQUIRE( RemoveCategory(category, "Cat12"));
+  UtVerifySubCategories({"Cat11", "Cat13"}, category);
+  REQUIRE(!RemoveCategory(category, "Cat12"));
+
+  REQUIRE( RemoveCategory(category, "Cat13"));
+  UtVerifySubCategories({"Cat11"}, category);
+
+  REQUIRE( RemoveCategory(category, "Cat11"));
+  UtVerifySubCategories({}, category);
+}
+
 // TODO: void GetAllNestedExpenses(std::list<ExpenseElem> &expenses, const CategoriesElem* category);
 
 
