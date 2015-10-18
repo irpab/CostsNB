@@ -146,6 +146,7 @@ void UtVerifySubCategories(const std::vector<std::string> sub_categories_str, co
   auto sub_category = category->sub_categories.begin();
   for (auto sub_category_str = sub_categories_str.begin(); sub_category_str != sub_categories_str.end(); ++sub_category_str) {
     REQUIRE(COMPARE_STRINGS(*sub_category_str, (*sub_category)->category_name));
+    REQUIRE((*sub_category)->parent_category == category);
     ++sub_category;
   }
   REQUIRE(sub_category == category->sub_categories.end());
@@ -396,6 +397,68 @@ TEST_CASE( "RemoveCategory", "[internal]" ) {
 
   REQUIRE( RemoveCategory(category, "Cat11"));
   UtVerifySubCategories({}, category);
+}
+
+extern bool MoveCategoryBack(CategoriesElem* categories, const std::string &moving_category_name_);
+TEST_CASE( "MoveCategoryBack", "[internal]" ) {
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+  CREATE_LEAF_CATEGORY(cat12, category, "Cat112");
+  CREATE_LEAF_CATEGORY(cat111, cat11, "Cat111");
+  CREATE_LEAF_CATEGORY(cat112, cat11, "Cat112");
+  CREATE_LEAF_CATEGORY(cat1111, cat111, "Cat1111");
+  LINK_ROOT_LEAF(category, cat11);
+  LINK_ROOT_LEAF(category, cat12);
+  LINK_ROOT_LEAF(cat11, cat111);
+  LINK_ROOT_LEAF(cat11, cat112);
+  LINK_ROOT_LEAF(cat111, cat1111);
+
+  UtVerifySubCategories({"Cat11", "Cat112"}, category);
+  UtVerifySubCategories({"Cat111", "Cat112"}, cat11);
+  UtVerifySubCategories({}, cat12);
+  UtVerifySubCategories({"Cat1111"}, cat111);
+  UtVerifySubCategories({}, cat112);
+
+  REQUIRE(!MoveCategoryBack(category, "Cat112"));
+  REQUIRE(!MoveCategoryBack(cat11, "Cat112"));
+  REQUIRE( MoveCategoryBack(cat11, "Cat111"));
+
+  UtVerifySubCategories({"Cat11", "Cat112", "Cat111"}, category);
+  UtVerifySubCategories({"Cat112"}, cat11);
+  UtVerifySubCategories({}, cat12);
+  UtVerifySubCategories({"Cat1111"}, cat111);
+  UtVerifySubCategories({}, cat112);
+}
+
+extern bool MoveCategoryTo(CategoriesElem* categories, const std::string &moving_category_name, const std::string &to_category_name);
+TEST_CASE( "MoveCategoryTo", "[internal]" ) {
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+  CREATE_LEAF_CATEGORY(cat111, cat11, "Cat111");
+  CREATE_LEAF_CATEGORY(cat112, cat11, "Cat112");
+  CREATE_LEAF_CATEGORY(cat113, cat11, "Cat1121");
+  CREATE_LEAF_CATEGORY(cat1111, cat111, "Cat1111");
+  CREATE_LEAF_CATEGORY(cat1121, cat112, "Cat1121");
+  LINK_ROOT_LEAF(category, cat11);
+  LINK_ROOT_LEAF(cat11, cat111);
+  LINK_ROOT_LEAF(cat11, cat112);
+  LINK_ROOT_LEAF(cat11, cat113);
+  LINK_ROOT_LEAF(cat111, cat1111);
+  LINK_ROOT_LEAF(cat112, cat1121);
+
+  UtVerifySubCategories({"Cat11"}, category);
+  UtVerifySubCategories({"Cat111", "Cat112", "Cat1121"}, cat11);
+  UtVerifySubCategories({"Cat1111"}, cat111);
+  UtVerifySubCategories({"Cat1121"}, cat112);
+
+  REQUIRE(!MoveCategoryTo(cat11, "Cat1121", "Cat112"));
+  REQUIRE(!MoveCategoryTo(cat11, "Cat111", "Cat111"));
+  REQUIRE( MoveCategoryTo(cat11, "Cat111", "Cat112"));
+
+  UtVerifySubCategories({"Cat11"}, category);
+  UtVerifySubCategories({"Cat112", "Cat1121"}, cat11);
+  UtVerifySubCategories({"Cat1111"}, cat111);
+  UtVerifySubCategories({"Cat1121", "Cat111"}, cat112);
 }
 
 // TODO: void GetAllNestedExpenses(std::list<ExpenseElem> &expenses, const CategoriesElem* category);

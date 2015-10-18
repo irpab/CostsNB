@@ -120,3 +120,25 @@ void Costs_nb_qml_proxy::buy(const QString &selectedCategory, const unsigned int
     costs_nb_core->Buy(selectedCategory.toStdString(), cost, info.toStdString());
     update_qml_categoriesModel();
 }
+
+bool Costs_nb_qml_proxy::category_move_back(const QString &selectedCategory)
+{
+    bool res = costs_nb_core->MoveCategoryBack(selectedCategory.toStdString());
+    update_qml_categoriesModel();
+    return res;
+}
+
+bool Costs_nb_qml_proxy::category_move_to(const QString &selectedCategory, const QString &toCategory)
+{
+    bool res = costs_nb_core->MoveCategoryTo(selectedCategory.toStdString(), toCategory.toStdString());
+    update_qml_categoriesModel();
+    return res;
+}
+
+void Costs_nb_qml_proxy::update_qml_moveCategoryToModel(const QString &selectedCategory)
+{
+    QStringList currentCategoriesCore;
+    //QString currentCategoriesParent;
+    std::tie (currentCategoriesCore, std::ignore) = current_categories();
+    _qmlContext->setContextProperty("moveCategoryToModel", QVariant::fromValue(currentCategoriesCore));
+}

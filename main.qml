@@ -206,6 +206,22 @@ ApplicationWindow {
             }
         }
         MenuItem {
+            text: qsTr("&Move Category Back")
+            onTriggered: {
+                var category_move_res = costs_nb_qml_proxy.category_move_back(tapped_category);
+                if (!category_move_res) {
+                    messageDialog.show("Moving Failed")
+                }
+            }
+        }
+        MenuItem {
+            text: qsTr("&Move Category To")
+            onTriggered: {
+                costs_nb_qml_proxy.update_qml_moveCategoryToModel(tapped_category);
+                moveCategoryToDialog.open();
+            }
+        }
+        MenuItem {
             text: qsTr("&Show Expenses")
             onTriggered: {
                 costs_nb_qml_proxy.update_qml_showExpensesModel(tapped_category);
@@ -277,6 +293,49 @@ ApplicationWindow {
                         Text {
                             text: modelData
                             font.pixelSize: 45
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Dialog {
+        id: moveCategoryToDialog
+        title: "Select Dest Category"
+        standardButtons: StandardButton.Cancel
+
+        Rectangle {
+            implicitWidth: appWindow.width*0.9
+            implicitHeight: appWindow.height*0.9
+            anchors.centerIn: parent
+            ListView {
+                anchors.fill: parent
+//                anchors.margins: 10
+                clip: true
+                id: moveCategoryToListview
+
+                model: moveCategoryToModel
+                delegate: Item {
+                    id: moveCategoryToDelegate
+                    width: moveCategoryToListview.width
+                    height: 90
+                    Rectangle {
+                        anchors.margins: 15
+                        anchors.fill: parent
+                        Text {
+                            text: modelData
+                            font.pixelSize: 80
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                var category_move_res = costs_nb_qml_proxy.category_move_to(tapped_category, modelData);
+                                if (!category_move_res) {
+                                    messageDialog.show("Adding " + tapped_category + " to " + modelData + " Failed")
+                                }
+                                moveCategoryToDialog.close()
+                            }
                         }
                     }
                 }

@@ -239,6 +239,67 @@ void Buy(CategoriesElem* categories, const std::string &selected_category, const
     Buy(categories, selected_category, cost, info, now);
 }
 
+bool RemoveCategory(CategoriesElem* categories, const std::string &removing_category_name_)
+{
+    std::string removing_category_name = RemoveDisplaySubCategoriesPrefix(removing_category_name_);
+
+    CategoriesElem* category = GetSubCategoryByName(categories, removing_category_name);
+    if (category == nullptr)
+        return false;
+
+    std::list<ExpenseElem> expenses;
+    GetAllNestedExpenses(expenses, category);
+    for (auto expense = expenses.begin(); expense != expenses.end(); ++expense) {
+        category->parent_category->expenses.push_back(*expense);
+    }
+
+    categories->sub_categories.remove(category);
+
+    return true;
+}
+
+bool MoveCategory(CategoriesElem* current_parent, CategoriesElem* new_parent, const std::string &moving_category_name_)
+{
+    if (current_parent == new_parent)
+        return false;
+
+    std::string moving_category_name = RemoveDisplaySubCategoriesPrefix(moving_category_name_);
+
+    CategoriesElem* moving_category = GetSubCategoryByName(current_parent, moving_category_name);
+    if (moving_category == nullptr)
+        return false;
+
+    if (new_parent == moving_category)
+        return false;
+
+    auto parent_subcat_same_name = GetSubCategoryByName(new_parent, moving_category_name);
+    if (parent_subcat_same_name != nullptr)
+        return false;
+
+    current_parent->sub_categories.remove(moving_category);
+    new_parent->sub_categories.push_back(moving_category);
+    moving_category->parent_category = new_parent;
+
+    return true;
+}
+
+bool MoveCategoryBack(CategoriesElem* current_parent, const std::string &moving_category_name)
+{
+    if (current_parent->IsRootCategory())
+        return false;
+    auto new_parent = current_parent->parent_category;
+    return MoveCategory(current_parent, new_parent, moving_category_name);
+}
+
+bool MoveCategoryTo(CategoriesElem* current_parent, const std::string &moving_category_name, const std::string &to_category_name_)
+{
+    std::string to_category_name = RemoveDisplaySubCategoriesPrefix(to_category_name_);
+    auto new_parent = GetSubCategoryByName(current_parent, to_category_name);
+    if (new_parent == nullptr)
+        return false;
+    return MoveCategory(current_parent, new_parent, moving_category_name);
+}
+
 /////////////////////////////
 // API
 /////////////////////////////
@@ -309,25 +370,6 @@ bool CostsNbCore::CategoryAddSub(const std::string &parent_category_name_, const
     return true;
 }
 
-bool RemoveCategory(CategoriesElem* categories, const std::string &removing_category_name_)
-{
-    std::string removing_category_name = RemoveDisplaySubCategoriesPrefix(removing_category_name_);
-
-    CategoriesElem* category = GetSubCategoryByName(categories, removing_category_name);
-    if (category == nullptr)
-        return false;
-
-    std::list<ExpenseElem> expenses;
-    GetAllNestedExpenses(expenses, category);
-    for (auto expense = expenses.begin(); expense != expenses.end(); ++expense) {
-        category->parent_category->expenses.push_back(*expense);
-    }
-
-    categories->sub_categories.remove(category);
-
-    return true;
-}
-
 bool CostsNbCore::RemoveCategory(const std::string &removing_category_name_)
 {
     bool RemoveRes = ::RemoveCategory(categories, removing_category_name_);
@@ -357,4 +399,14 @@ std::list<std::string> CostsNbCore::GetExpenses(const std::string &selected_cate
 std::list<std::string> CostsNbCore::GetAllExpenses(const std::string &selected_category)
 {
     return ::GetAllExpenses(categories, selected_category);
+}
+
+bool CostsNbCore::MoveCategoryBack(const std::string &moving_category_name)
+{
+    return ::MoveCategoryBack(categories, moving_category_name);
+}
+
+bool CostsNbCore::MoveCategoryTo(const std::string &moving_category_name, const std::string &to_category_name)
+{
+    return ::MoveCategoryTo(categories, moving_category_name, to_category_name);
 }

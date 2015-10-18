@@ -103,6 +103,11 @@ struct CategoriesElem
     {
     }
 
+    bool IsRootCategory()
+    {
+        return parent_category == nullptr;
+    }
+
     std::string category_name;
     unsigned int rating;
     CategoriesElem* parent_category;
@@ -141,6 +146,8 @@ public:
     bool CategorySelected(const std::string &selected_category);
     bool RemoveCategory(const std::string &selected_category);
     bool RenameCategory(const std::string &old_name, const std::string &new_name);
+    bool MoveCategoryBack(const std::string &moving_category_name);
+    bool MoveCategoryTo(const std::string &moving_category_name, const std::string &to_category_name);
     void CategoryBack();
     bool CategoryAdd(const std::string &new_category);
     bool CategoryAddSub(const std::string &parent_category, const std::string &new_category);
