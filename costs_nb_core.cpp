@@ -279,6 +279,7 @@ bool MoveCategory(CategoriesElem* current_parent, CategoriesElem* new_parent, co
     current_parent->sub_categories.remove(moving_category);
     new_parent->sub_categories.push_back(moving_category);
     moving_category->parent_category = new_parent;
+    new_parent->sub_categories.sort(CompareCategoriesByRating);
 
     return true;
 }
