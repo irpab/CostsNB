@@ -1,44 +1,38 @@
-CC=g++
-CFLAGS=-std=c++11
-CC_INCLUDE=-I json/ -I restclient-cpp/ -I ./
+CXX=g++
+CXXFLAGS=-std=c++11
+LDLIBS=-lcurl
+INCLUDE=-I json/ -I restclient-cpp/ -I ./
+
+.SUFFIXES: .cpp .o
+
+.cpp.o:
+	$(CXX) $(INCLUDE) $(CXXFLAGS) -c -o $@ $<
+
+.PHONY: clean run_ut all help
 
 all: run_ut
 
-jsoncpp.o:
-	$(CC) $(CFLAGS) $(CC_INCLUDE) -c jsoncpp.cpp -o jsoncpp.o
+OBJ = base64.o \
+	categories_to_backend.o \
+	categories_to_json_converter.o \
+	costs_nb_core_ut.o \
+	costs_nb_core.o \
+	ini_config.o \
+	jsoncpp.o \
+	miniz_wrp.o \
+	miniz.o \
+	restclient.o \
+	utils.o
 
-categories_to_backend.o:
-	$(CC) $(CFLAGS) $(CC_INCLUDE) -c categories_to_backend.cpp -o categories_to_backend.o
-
-categories_to_json_converter.o:
-	$(CC) $(CFLAGS) $(CC_INCLUDE) -c categories_to_json_converter.cpp -o categories_to_json_converter.o
-
-utils.o:
-	$(CC) $(CFLAGS) $(CC_INCLUDE) -c utils.cpp -o utils.o
-
-costs_nb_core.o:
-	$(CC) $(CFLAGS) $(CC_INCLUDE) -c costs_nb_core.cpp -o costs_nb_core.o
-
-base64.o:
-	$(CC) $(CFLAGS) $(CC_INCLUDE) -c base64.cpp -o base64.o
-
-miniz.o:
-	$(CC) $(CFLAGS) $(CC_INCLUDE) -c miniz.cpp -o miniz.o
-
-miniz_wrp.o:
-	$(CC) $(CFLAGS) $(CC_INCLUDE) -c miniz_wrp.cpp -o miniz_wrp.o
-
-ini_config.o:
-	$(CC) $(CFLAGS) $(CC_INCLUDE) -c ini_config.cpp -o ini_config.o
-
-restclient-cpp.o:
-	$(CC) $(CFLAGS) $(CC_INCLUDE) -c restclient.cpp -o restclient-cpp.o
-
-ut: base64.o miniz.o ini_config.o miniz_wrp.o categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o restclient-cpp.o
-	$(CC) $(CFLAGS) $(CC_INCLUDE) base64.o ini_config.o miniz.o miniz_wrp.o categories_to_json_converter.o utils.o categories_to_backend.o jsoncpp.o costs_nb_core.o restclient-cpp.o -lcurl costs_nb_core_ut.cpp -o ut
+ut: $(OBJ)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) $(OBJ) $(LDLIBS) -o ut
 
 run_ut: ut
 	./ut
+
+help:
+	@echo "ut - build Unit Tests"
+	@echo "run_ut - run all Unit Tests"
 
 clean:
 	rm -f *.o ut
