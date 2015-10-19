@@ -18,19 +18,17 @@ Costs_nb_qml_proxy::Costs_nb_qml_proxy(QQmlContext *qmlContext)
     : _qmlContext(qmlContext)
 {
     QString dbLocation = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
-    std::string cfgFullName = (dbLocation + "/" + COSTS_NB_CFG_NAME).toStdString();
-    ini_cfg = new IniConfig(cfgFullName);
+    QString cfgFullName = dbLocation + "/" + COSTS_NB_CFG_NAME;
+    ini_cfg = new IniConfig(cfgFullName.toStdString());
 
     QString dbName = QString::fromStdString(ini_cfg->GetValue("database", "db_name"));
-//    qDebug() << "dbName = " << dbName;
-    std::string dbFullName = (dbLocation + "/" + dbName).toStdString();
-//    qDebug() << "dbFullName = " << QString::fromStdString(dbFullName);
+    QString dbFullName = dbLocation + "/" + dbName;
     CategoriesToJsonFileConverter * categories_to_db_converter =
-      new CategoriesToJsonFileConverter(dbFullName,
+      new CategoriesToJsonFileConverter(dbFullName.toStdString(),
         new CategoriesToJsonConverterJsoncppLib());
 
-    CategoriesToBackend * categories_to_backend = new CategoriesToRestfulBackend(new CategoriesToJsonConverterJsoncppLib()
-        , ini_cfg);
+    CategoriesToBackend * categories_to_backend = new CategoriesToRestfulBackend(
+          new CategoriesToJsonConverterJsoncppLib(), ini_cfg);
 
     costs_nb_core = new CostsNbCore(categories_to_db_converter, categories_to_backend);
     update_qml_categoriesModel();
@@ -45,11 +43,11 @@ Costs_nb_qml_proxy::~Costs_nb_qml_proxy()
 
 std::tuple<QStringList, QString> Costs_nb_qml_proxy::current_categories()
 {
-    std::list<std::string> currentCategoriesCore;
-    std::string currentCategoriesParent;
-    std::tie(currentCategoriesCore, currentCategoriesParent) = costs_nb_core->GetCurrentCategories();
-    QStringList currentCategoriesUI = stdToQStrList(currentCategoriesCore);
-    return std::make_tuple(currentCategoriesUI, QString::fromStdString(currentCategoriesParent));
+    std::list<std::string> categoriesStr;
+    std::string categoriesParentStr;
+    std::tie(categoriesStr, categoriesParentStr) = costs_nb_core->GetCurrentCategories();
+    QStringList currentCategoriesUI = stdToQStrList(categoriesStr);
+    return std::make_tuple(currentCategoriesUI, QString::fromStdString(categoriesParentStr));
 }
 
 bool Costs_nb_qml_proxy::category_selected(const QString &selectedCategory)
@@ -107,12 +105,14 @@ void Costs_nb_qml_proxy::update_qml_categoriesModel()
 
 void Costs_nb_qml_proxy::update_qml_showExpensesModel(const QString &selectedCategory)
 {
-    _qmlContext->setContextProperty("showExpensesModel", QVariant::fromValue(stdToQStrList(costs_nb_core->GetExpenses(selectedCategory.toStdString()))));
+    auto expensesStr = costs_nb_core->GetExpenses(selectedCategory.toStdString());
+    _qmlContext->setContextProperty("showExpensesModel", QVariant::fromValue(stdToQStrList(expensesStr)));
 }
 
 void Costs_nb_qml_proxy::update_qml_showAllExpensesModel(const QString &selectedCategory)
 {
-    _qmlContext->setContextProperty("showExpensesModel", QVariant::fromValue(stdToQStrList(costs_nb_core->GetAllExpenses(selectedCategory.toStdString()))));
+    auto expensesStr = costs_nb_core->GetAllExpenses(selectedCategory.toStdString());
+    _qmlContext->setContextProperty("showExpensesModel", QVariant::fromValue(stdToQStrList(expensesStr)));
 }
 
 void Costs_nb_qml_proxy::buy(const QString &selectedCategory, const unsigned int &cost, const QString &info)
@@ -135,10 +135,9 @@ bool Costs_nb_qml_proxy::category_move_to(const QString &selectedCategory, const
     return res;
 }
 
-void Costs_nb_qml_proxy::update_qml_moveCategoryToModel(const QString &selectedCategory)
+void Costs_nb_qml_proxy::update_qml_moveCategoryToModel()
 {
     QStringList currentCategoriesCore;
-    //QString currentCategoriesParent;
     std::tie (currentCategoriesCore, std::ignore) = current_categories();
     _qmlContext->setContextProperty("moveCategoryToModel", QVariant::fromValue(currentCategoriesCore));
 }

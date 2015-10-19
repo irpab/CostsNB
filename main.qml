@@ -217,7 +217,7 @@ ApplicationWindow {
         MenuItem {
             text: qsTr("&Move Category To")
             onTriggered: {
-                costs_nb_qml_proxy.update_qml_moveCategoryToModel(tapped_category);
+                costs_nb_qml_proxy.update_qml_moveCategoryToModel();
                 moveCategoryToDialog.open();
             }
         }
@@ -288,8 +288,6 @@ ApplicationWindow {
                     width: showExpensesListview.width
                     height: 50
                     Rectangle {
-                        anchors.margins: 3
-                        anchors.fill: parent
                         Text {
                             text: modelData
                             font.pixelSize: 45

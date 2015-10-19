@@ -14,8 +14,6 @@ class Costs_nb_qml_proxy : public QObject
 {
     Q_OBJECT
 
-//    Q_PROPERTY(QStringList current_categories READ current_categories)
-
     void update_qml_categoriesModel();
     std::tuple<QStringList, QString> current_categories();
 
@@ -37,7 +35,7 @@ public:
     Q_INVOKABLE void buy(const QString &selectedCategory, const unsigned int &cost, const QString &info);
     Q_INVOKABLE void update_qml_showExpensesModel(const QString &selectedCategory);
     Q_INVOKABLE void update_qml_showAllExpensesModel(const QString &selectedCategory);
-    Q_INVOKABLE void update_qml_moveCategoryToModel(const QString &selectedCategory);
+    Q_INVOKABLE void update_qml_moveCategoryToModel();
 
 signals:
 

@@ -83,7 +83,7 @@ struct ExpenseElem
 
     std::string ToStr() const
     {
-        return datetime.ToStr() + "   " + utils::to_string(cost);
+        return datetime.ToStr() + "   " + utils::to_string(cost) + "   " + info;
     }
 
     Datetime datetime;
