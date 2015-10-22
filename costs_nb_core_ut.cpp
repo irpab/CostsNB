@@ -23,7 +23,7 @@
 #define CREATE_EXPENSE_D(VAR, DATE, COST) ExpenseElem VAR = ExpenseElem(ExpenseElem::DATE, COST)
 #define LINK_EXPENSE(CAT, EXP) CAT->expenses.push_back(EXP);
 
-extern CategoriesElem * GetRootCategory(CategoriesElem * const category);
+extern CategoriesElem* GetRootCategory(CategoriesElem* const category);
 TEST_CASE( "GetRootCategory", "[internal]" ) {
   CREATE_ROOT_CATEGORY(category, "Cat1");
   CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
@@ -325,7 +325,7 @@ TEST_CASE( "GetAllExpenses", "[internal]" ) {
     GetAllExpenses(category, "Cat11"));
 }
 
-extern void Buy(CategoriesElem* categories, const std::string &selectedCategory, const unsigned int cost, const std::string &info, struct tm * now);
+extern void Buy(CategoriesElem* categories, const std::string &selectedCategory, const unsigned int cost, const std::string &info, struct tm* now);
 TEST_CASE( "Buy.rating", "[internal]" ) {
   CREATE_ROOT_CATEGORY_R(cat1, "Cat1", 2);
   CREATE_LEAF_CATEGORY_R(  cat11,   cat1,   "Cat11", 15);
@@ -787,7 +787,7 @@ TEST_CASE( "CategoriesToJsonFileConverter", "[ext_db_converter]" ) {
 
   CategoriesToJsonConverter *converter_from_json = new CategoriesToJsonConverterJsoncppLib();
   CategoriesToJsonFileConverter categories_from_json_file_converter(json_db_filename, converter_from_json);
-  CategoriesElem * category_after_convert = categories_from_json_file_converter.ExtDbToCategories();
+  CategoriesElem* category_after_convert = categories_from_json_file_converter.ExtDbToCategories();
 
   REQUIRE(*category_after_convert == *category);
 }
@@ -797,7 +797,7 @@ public:
   bool SyncToBackend(CategoriesElem *categories) { return true; }
 };
 
-TEST_CASE( "CostsNbCore.Read_Write_DB", "[complex]" ) {
+TEST_CASE( "CostsNbCore.Read_Write_DB", "[core]" ) {
   CREATE_ROOT_CATEGORY(category, "Cat1");
   CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
   CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
@@ -832,21 +832,82 @@ TEST_CASE( "CostsNbCore.Read_Write_DB", "[complex]" ) {
 
   std::string json_db_filename("/tmp/test.txt");
 
-  CategoriesToJsonFileConverter * init_converter =
+  CategoriesToJsonFileConverter* init_converter =
     new CategoriesToJsonFileConverter(json_db_filename,
       new CategoriesToJsonConverterJsoncppLib());
   init_converter->CategoriesToExtDb(category);
 
-  CategoriesToJsonFileConverter * converter =
+  CategoriesToJsonFileConverter* converter =
     new CategoriesToJsonFileConverter(json_db_filename,
       new CategoriesToJsonConverterJsoncppLib());
-  CostsNbCore * costs_nb_core = new CostsNbCore(converter, new DummyCategoriesToBackend());
+  CostsNbCore* costs_nb_core = new CostsNbCore(converter, new DummyCategoriesToBackend());
   std::remove(json_db_filename.c_str());
   delete costs_nb_core;
 
-  CategoriesElem * category_after_core_work = init_converter->ExtDbToCategories();
+  CategoriesElem* category_after_core_work = init_converter->ExtDbToCategories();
 
   REQUIRE(*category_after_core_work == *category);
+}
+
+class TestCategoriesToExtDbConverter : public CategoriesToExtDbConverter {
+public:
+  CategoriesElem* CreateTestCategoryTree()
+  {
+    CREATE_ROOT_CATEGORY(category, "Cat1");
+    CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+    CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
+    CREATE_LEAF_CATEGORY(cat111, cat11, "Cat111");
+    CREATE_LEAF_CATEGORY(cat112, cat11, "Cat112");
+    CREATE_LEAF_CATEGORY(cat1111, cat111, "Cat1111");
+    LINK_ROOT_LEAF(category, cat11);
+    LINK_ROOT_LEAF(category, cat12);
+    LINK_ROOT_LEAF(cat11, cat111);
+    LINK_ROOT_LEAF(cat11, cat112);
+    LINK_ROOT_LEAF(cat111, cat1111);
+
+    CREATE_EXPENSE_D(e1_1   , Datetime(2015,  1, 11,  1, 21, 0), 1);
+    CREATE_EXPENSE_D(e1_2   , Datetime(2015,  7,  5,  6, 19, 0), 2);
+    CREATE_EXPENSE_D(e11_1  , Datetime(2014,  2, 21, 13, 34, 0), 3);
+    CREATE_EXPENSE_D(e11_2  , Datetime(2015,  1,  4,  3, 35, 0), 4);
+    CREATE_EXPENSE_D(e12_1  , Datetime(2015,  4,  1,  9, 13, 0), 5);
+    CREATE_EXPENSE_D(e111_1 , Datetime(2017,  4,  6,  7, 56, 0), 6);
+    CREATE_EXPENSE_D(e112_1 , Datetime(2015,  1,  1,  1,  7, 0), 7);
+    CREATE_EXPENSE_D(e112_2 , Datetime(2017,  9, 27, 21,  1, 0), 8);
+    CREATE_EXPENSE_D(e1111_1, Datetime(2015, 12,  1, 23,  2, 0), 9);
+
+    LINK_EXPENSE(category, e1_1);
+    LINK_EXPENSE(category, e1_2);
+    LINK_EXPENSE(cat11, e11_1);
+    LINK_EXPENSE(cat11, e11_2);
+    LINK_EXPENSE(cat12, e12_1);
+    LINK_EXPENSE(cat111, e111_1);
+    LINK_EXPENSE(cat112, e112_1);
+    LINK_EXPENSE(cat112, e112_2);
+    LINK_EXPENSE(cat1111, e1111_1);
+
+    return category;
+  }
+
+  TestCategoriesToExtDbConverter()
+  {
+    test_root_category = CreateTestCategoryTree();
+  }
+  void CategoriesToExtDb(CategoriesElem* categories)
+  {
+    saved_root_category = categories; // copy
+  }
+  CategoriesElem* ExtDbToCategories()
+  {
+    return test_root_category;
+  }
+  CategoriesElem* test_root_category;
+  CategoriesElem* saved_root_category;
+};
+
+TEST_CASE( "CostsNbCore.API", "[core]" ) {
+  TestCategoriesToExtDbConverter* cat_to_db = new TestCategoriesToExtDbConverter();
+  DummyCategoriesToBackend* cat_to_backend = new DummyCategoriesToBackend();
+  CostsNbCore* core = new CostsNbCore(cat_to_db, cat_to_backend);
 }
 
 TEST_CASE( "base64", "[utils]" ) {
