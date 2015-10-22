@@ -8,6 +8,7 @@
 #include "costs_nb_core.h"
 #include "categories_to_json_converter.h"
 #include "base64.h"
+#include "utils.h"
 #include "miniz_wrp.h"
 #include "ini_config.h"
 
@@ -262,9 +263,9 @@ TEST_CASE( "ExpenseElem.ToStr", "[internal]" ) {
   CREATE_EXPENSE_D(e11_2, Datetime(1954,  1, 23, 23, 24, 59), 132);
   CREATE_EXPENSE_D(e11_3, Datetime(2174,  7, 30, 11,  1, 54),  56);
 
-  CHECK(COMPARE_STRINGS("2012-Dec-01 05:38   1"  , e11_1.ToStr()));
-  CHECK(COMPARE_STRINGS("1954-Jan-23 23:24   132", e11_2.ToStr()));
-  CHECK(COMPARE_STRINGS("2174-Jul-30 11:01   56" , e11_3.ToStr()));
+  CHECK(COMPARE_STRINGS("2012-Dec-01 05:38   1   "  , e11_1.ToStr()));
+  CHECK(COMPARE_STRINGS("1954-Jan-23 23:24   132   ", e11_2.ToStr()));
+  CHECK(COMPARE_STRINGS("2174-Jul-30 11:01   56   " , e11_3.ToStr()));
 }
 
 TEST_CASE( "Datetime.operator>", "[internal]" ) {
@@ -874,10 +875,10 @@ std::string DeEscapeJsonString(const std::string& input) {
   return ss.str();
 }
 
-extern std::string EscapeJsonString(const std::string& input);
+// extern std::string EscapeJsonString(const std::string& input);
 TEST_CASE( "EscapeJsonString", "[utils]" ) {
   auto json_str = "test test { \"json_data\" = data_test }, { }";
-  auto escaped_str = EscapeJsonString(json_str);
+  auto escaped_str = utils::EscapeJsonString(json_str);
   auto zipped_str = compress_string(escaped_str);
   auto base64_str = base64_encode(reinterpret_cast<const unsigned char*>(zipped_str.c_str()), zipped_str.size());
 

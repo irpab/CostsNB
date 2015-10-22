@@ -17,9 +17,11 @@ QStringList stdToQStrList(std::list<std::string> stdStrList)
 Costs_nb_qml_proxy::Costs_nb_qml_proxy(QQmlContext *qmlContext)
     : _qmlContext(qmlContext)
 {
-    QString dbLocation = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+    QString writableLocation = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+    QString dbLocation = writableLocation;
     QString cfgFullName = dbLocation + "/" + COSTS_NB_CFG_NAME;
     ini_cfg = new IniConfig(cfgFullName.toStdString());
+    ini_cfg->SetValue("log", "log_dir", writableLocation.toStdString());
 
     QString dbName = QString::fromStdString(ini_cfg->GetValue("database", "db_name"));
     QString dbFullName = dbLocation + "/" + dbName;
