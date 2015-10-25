@@ -7,6 +7,8 @@
 #include <sstream>
 #include <ctime>
 #include <iomanip>
+#include <algorithm>
+#include <iostream>
 
 #include "utils.h"
 
@@ -94,23 +96,21 @@ struct ExpenseElem
 
 struct CategoriesElem
 {
-    CategoriesElem(const std::string &category_name_, CategoriesElem* parent_category_) :
-        category_name(category_name_), rating(0), parent_category(parent_category_)
-    {
-    }
-    CategoriesElem(const std::string &category_name_, CategoriesElem* parent_category_, unsigned int rating_) :
-        category_name(category_name_), rating(rating_), parent_category(parent_category_)
-    {
-    }
+    CategoriesElem();
+    CategoriesElem(const std::string &category_name_, CategoriesElem* parent_category_);
+    CategoriesElem(const std::string &category_name_, CategoriesElem* parent_category_, unsigned int rating_);
+    CategoriesElem(const CategoriesElem& copy);
+    CategoriesElem& operator=(CategoriesElem copy);
+    ~CategoriesElem();
+    // TODO: move constr/assign
+    friend void swap(CategoriesElem& first, CategoriesElem& second);
 
-    bool IsRootCategory()
-    {
-        return parent_category == nullptr;
-    }
+    bool IsRootCategory();
 
     std::string category_name;
     unsigned int rating;
     CategoriesElem* parent_category;
+    // TODO: smart ptr?
     std::list<CategoriesElem*> sub_categories;
     std::list<ExpenseElem> expenses;
 };
@@ -139,7 +139,13 @@ public:
 class CostsNbCore
 {
 public:
-    CostsNbCore(CategoriesToExtDbConverter *categories_to_ext_db_converter, CategoriesToBackend *categories_to_backend);
+    CostsNbCore(CategoriesToExtDbConverter *categories_to_ext_db_converter
+        , CategoriesToBackend *categories_to_backend);
+    CostsNbCore(const CostsNbCore& copy) = delete;
+    CostsNbCore& operator=(CostsNbCore copy) = delete;
+    // TODO: move constr/assign
+    // CostsNbCore(CostsNbCore&& copy);
+    // CostsNbCore& operator=(CostsNbCore copy);
     ~CostsNbCore();
 
     std::tuple<std::list<std::string>, std::string> GetCurrentCategories();
