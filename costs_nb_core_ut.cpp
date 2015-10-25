@@ -21,7 +21,7 @@
 #define ADD_SUB_CATEGORY(VAR, NAME) VAR->sub_categories.push_back(new CategoriesElem(NAME, VAR))
 #define COMPARE_STRINGS(STR1, STR2) (0 == std::string(STR1).compare(STR2))
 #define CREATE_EXPENSE(VAR, COST) CREATE_EXPENSE_D(VAR, Datetime(1, 1, 1, 1, 1, 1), COST)
-#define CREATE_EXPENSE_D(VAR, DATE, COST) ExpenseElem VAR = ExpenseElem(ExpenseElem::DATE, COST)
+#define CREATE_EXPENSE_D(VAR, DATE, COST) ExpenseElem VAR = ExpenseElem(DATE, COST)
 #define LINK_EXPENSE(CAT, EXP) CAT->expenses.push_back(EXP);
 
 extern CategoriesElem* GetRootCategory(CategoriesElem* const category);
@@ -270,21 +270,21 @@ TEST_CASE( "ExpenseElem.ToStr", "[internal]" ) {
 }
 
 TEST_CASE( "Datetime.operator>", "[internal]" ) {
-  CHECK(!(ExpenseElem::Datetime(1, 1, 1, 1, 1, 1) > ExpenseElem::Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK(!(Datetime(1, 1, 1, 1, 1, 1) > Datetime(1, 1, 1, 1, 1, 1)) );
 
-  CHECK(!(ExpenseElem::Datetime(1, 1, 1, 1, 1, 1) > ExpenseElem::Datetime(2, 1, 1, 1, 1, 1)) );
-  CHECK(!(ExpenseElem::Datetime(1, 1, 1, 1, 1, 1) > ExpenseElem::Datetime(1, 2, 1, 1, 1, 1)) );
-  CHECK(!(ExpenseElem::Datetime(1, 1, 1, 1, 1, 1) > ExpenseElem::Datetime(1, 1, 2, 1, 1, 1)) );
-  CHECK(!(ExpenseElem::Datetime(1, 1, 1, 1, 1, 1) > ExpenseElem::Datetime(1, 1, 1, 2, 1, 1)) );
-  CHECK(!(ExpenseElem::Datetime(1, 1, 1, 1, 1, 1) > ExpenseElem::Datetime(1, 1, 1, 1, 2, 1)) );
-  CHECK(!(ExpenseElem::Datetime(1, 1, 1, 1, 1, 1) > ExpenseElem::Datetime(1, 1, 1, 1, 1, 2)) );
+  CHECK(!(Datetime(1, 1, 1, 1, 1, 1) > Datetime(2, 1, 1, 1, 1, 1)) );
+  CHECK(!(Datetime(1, 1, 1, 1, 1, 1) > Datetime(1, 2, 1, 1, 1, 1)) );
+  CHECK(!(Datetime(1, 1, 1, 1, 1, 1) > Datetime(1, 1, 2, 1, 1, 1)) );
+  CHECK(!(Datetime(1, 1, 1, 1, 1, 1) > Datetime(1, 1, 1, 2, 1, 1)) );
+  CHECK(!(Datetime(1, 1, 1, 1, 1, 1) > Datetime(1, 1, 1, 1, 2, 1)) );
+  CHECK(!(Datetime(1, 1, 1, 1, 1, 1) > Datetime(1, 1, 1, 1, 1, 2)) );
 
-  CHECK( (ExpenseElem::Datetime(2, 1, 1, 1, 1, 1) > ExpenseElem::Datetime(1, 1, 1, 1, 1, 1)) );
-  CHECK( (ExpenseElem::Datetime(1, 2, 1, 1, 1, 1) > ExpenseElem::Datetime(1, 1, 1, 1, 1, 1)) );
-  CHECK( (ExpenseElem::Datetime(1, 1, 2, 1, 1, 1) > ExpenseElem::Datetime(1, 1, 1, 1, 1, 1)) );
-  CHECK( (ExpenseElem::Datetime(1, 1, 1, 2, 1, 1) > ExpenseElem::Datetime(1, 1, 1, 1, 1, 1)) );
-  CHECK( (ExpenseElem::Datetime(1, 1, 1, 1, 2, 1) > ExpenseElem::Datetime(1, 1, 1, 1, 1, 1)) );
-  CHECK( (ExpenseElem::Datetime(1, 1, 1, 1, 1, 2) > ExpenseElem::Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK( (Datetime(2, 1, 1, 1, 1, 1) > Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK( (Datetime(1, 2, 1, 1, 1, 1) > Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK( (Datetime(1, 1, 2, 1, 1, 1) > Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK( (Datetime(1, 1, 1, 2, 1, 1) > Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK( (Datetime(1, 1, 1, 1, 2, 1) > Datetime(1, 1, 1, 1, 1, 1)) );
+  CHECK( (Datetime(1, 1, 1, 1, 1, 2) > Datetime(1, 1, 1, 1, 1, 1)) );
 }
 
 extern std::list<std::string> GetAllExpenses(CategoriesElem* categories, const std::string &selectedCategory0);
@@ -468,11 +468,11 @@ TEST_CASE( "MoveCategoryTo", "[internal]" ) {
 
 // Converters UT
 
-TEST_CASE( "ExpenseElem::Datetime.==", "[internal]" ) {
-  ExpenseElem::Datetime d1(2015,  1, 11,  1, 21, 0);
-  ExpenseElem::Datetime d2(2015,  1, 11,  1, 21, 0);
-  ExpenseElem::Datetime d3(2015,  1, 11,  1, 14, 0);
-  ExpenseElem::Datetime d4(2015,  2, 11,  1, 21, 0);
+TEST_CASE( "Datetime.==", "[internal]" ) {
+  Datetime d1(2015,  1, 11,  1, 21, 0);
+  Datetime d2(2015,  1, 11,  1, 21, 0);
+  Datetime d3(2015,  1, 11,  1, 14, 0);
+  Datetime d4(2015,  2, 11,  1, 21, 0);
 
   CHECK(d1 == d2);
   CHECK(d2 == d1);

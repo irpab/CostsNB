@@ -1,6 +1,5 @@
 #include <fstream>
 #include <string>
-#include <iostream>
 #include <memory>
 
 //#include <QDebug>
@@ -9,11 +8,11 @@
 #include "categories_to_json_converter.h"
 #include "categories_to_backend.h"
 
-bool operator==(const ExpenseElem::Datetime& e1, const ExpenseElem::Datetime& e2) {
+bool operator==(const Datetime& e1, const Datetime& e2) {
   return !( (e1 > e2) || (e2 > e1) );
 }
 
-bool operator!=(const ExpenseElem::Datetime& e1, const ExpenseElem::Datetime& e2) {
+bool operator!=(const Datetime& e1, const Datetime& e2) {
   return !(e1 == e2);
 }
 
@@ -304,6 +303,53 @@ bool MoveCategoryTo(CategoriesElem* current_parent, const std::string &moving_ca
 /////////////////////////////
 // Internal classes
 /////////////////////////////
+
+Datetime::Datetime(unsigned short y_, unsigned short mn_, unsigned short d_,
+         unsigned short h_, unsigned short m_, unsigned short s_) :
+    y(y_), mn(mn_), d(d_), h(h_), m(m_), s(s_)
+{}
+
+Datetime::Datetime(const struct tm * t)
+{
+    y  = t->tm_year + 1900;
+    mn = t->tm_mon + 1;
+    d  = t->tm_mday;
+    h  = t->tm_hour;
+    m  = t->tm_min;
+    s  = t->tm_sec;
+}
+
+bool Datetime::operator>(const Datetime &r) const {
+    if (y > r.y) return true;
+    if (y < r.y) return false;
+
+    if (mn > r.mn) return true;
+    if (mn < r.mn) return false;
+
+    if (d > r.d) return true;
+    if (d < r.d) return false;
+
+    if (h > r.h) return true;
+    if (h < r.h) return false;
+
+    if (m > r.m) return true;
+    if (m < r.m) return false;
+
+    if (s > r.s) return true;
+    if (s < r.s) return false;
+
+    return false;
+}
+
+std::string Datetime::ToStr() const
+{
+    std::stringstream ss;
+    ss << y << '-' << utils::MonthNumToStr(mn) << '-'
+      << std::setw(2) << std::setfill('0') << d << " "
+      << std::setw(2) << std::setfill('0') << h << ":"
+      << std::setw(2) << std::setfill('0') << m;
+    return ss.str();
+}
 
 CategoriesElem::CategoriesElem() :
     category_name("")

@@ -14,59 +14,19 @@
 
 #define SUPPORTED_DB_VERSION 1
 
+struct Datetime
+{
+    Datetime(unsigned short y_, unsigned short mn_, unsigned short d_,
+             unsigned short h_, unsigned short m_, unsigned short s_);
+    explicit Datetime(const struct tm * t);
+    bool operator>(const Datetime &r) const;
+    std::string ToStr() const;
+
+    unsigned short y, mn, d, h, m, s;
+};
+
 struct ExpenseElem
 {
-    struct Datetime
-    {
-        Datetime(unsigned short y_, unsigned short mn_, unsigned short d_,
-                 unsigned short h_, unsigned short m_, unsigned short s_) :
-            y(y_), mn(mn_), d(d_), h(h_), m(m_), s(s_)
-        {}
-        explicit Datetime(const struct tm * t)
-        {
-            y  = t->tm_year + 1900;
-            mn = t->tm_mon + 1;
-            d  = t->tm_mday;
-            h  = t->tm_hour;
-            m  = t->tm_min;
-            s  = t->tm_sec;
-        }
-
-        bool operator>(const Datetime &r) const {
-            if (y > r.y) return true;
-            if (y < r.y) return false;
-
-            if (mn > r.mn) return true;
-            if (mn < r.mn) return false;
-
-            if (d > r.d) return true;
-            if (d < r.d) return false;
-
-            if (h > r.h) return true;
-            if (h < r.h) return false;
-
-            if (m > r.m) return true;
-            if (m < r.m) return false;
-
-            if (s > r.s) return true;
-            if (s < r.s) return false;
-
-            return false;
-        }
-
-        std::string ToStr() const
-        {
-            std::stringstream ss;
-            ss << y << '-' << utils::MonthNumToStr(mn) << '-'
-              << std::setw(2) << std::setfill('0') << d << " "
-              << std::setw(2) << std::setfill('0') << h << ":"
-              << std::setw(2) << std::setfill('0') << m;
-            return ss.str();
-        }
-
-        unsigned short y, mn, d, h, m, s;
-    };
-
     ExpenseElem(const struct tm * datetime_, unsigned int cost_) :
         datetime(datetime_), cost(cost_), info("")
     {}
@@ -167,8 +127,8 @@ private:
     CategoriesToBackend *categories_to_backend;
 };
 
-bool operator==(const ExpenseElem::Datetime& e1, const ExpenseElem::Datetime& e2);
-bool operator!=(const ExpenseElem::Datetime& e1, const ExpenseElem::Datetime& e2);
+bool operator==(const Datetime& e1, const Datetime& e2);
+bool operator!=(const Datetime& e1, const Datetime& e2);
 
 bool operator==(const ExpenseElem& e1, const ExpenseElem& e2);
 bool operator!=(const ExpenseElem& e1, const ExpenseElem& e2);
