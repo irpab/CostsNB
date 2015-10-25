@@ -83,7 +83,7 @@ void CategoriesToJsonConverterJsoncppLib::ConvertJsonToCategories(CategoriesElem
     auto h  = jsonDatetime["h"].asInt();
     auto m  = jsonDatetime["m"].asInt();
     auto s  = jsonDatetime["s"].asInt();
-    ExpenseElem::Datetime datetime(y, mn, d, h, m, s);
+    Datetime datetime(y, mn, d, h, m, s);
     Json::Value json_info = json_value[index]["expenses"][expense_num]["info"];
     std::string info = json_info.asString();
     new_sub_category->expenses.push_back(ExpenseElem(datetime, json_value[index]["expenses"][expense_num]["cost"].asInt(), info));

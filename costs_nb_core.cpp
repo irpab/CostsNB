@@ -1,6 +1,7 @@
 #include <fstream>
 #include <string>
 #include <memory>
+#include <algorithm>
 
 //#include <QDebug>
 
@@ -72,7 +73,7 @@ bool operator!=(const CategoriesElem& e1, const CategoriesElem& e2) {
   return !(e1 == e2);
 }
 
-CategoriesElem * GetRootCategory(CategoriesElem * const category)
+CategoriesElem* GetRootCategory(CategoriesElem* const category)
 {
     CategoriesElem* root_category = category;
     while (root_category->parent_category != nullptr)
@@ -99,18 +100,6 @@ bool ValidateCategoryName(const std::string &category_name)
     return true;
 }
 
-bool SubCategoriesContainCategory(const CategoriesElem* categories, const std::string &category_name)
-{
-    for (auto category = categories->sub_categories.begin(); category != categories->sub_categories.end(); ++category)
-    {
-        if (0 == (*category)->category_name.compare(category_name))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
 // TODO: avoid text prefixes, use objects
 std::string AddDisplaySubCategoriesPrefix(const CategoriesElem* category)
 {
@@ -131,14 +120,21 @@ std::string RemoveDisplaySubCategoriesPrefix(const std::string& category_name)
 
 CategoriesElem* GetSubCategoryByName(const CategoriesElem* category, const std::string &category_name)
 {
-    for (auto sub_category = category->sub_categories.begin(); sub_category != category->sub_categories.end(); ++sub_category)
-    {
-        if (0 == (*sub_category)->category_name.compare(category_name))
-        {
-            return *sub_category;
-        }
-    }
+    auto found_category = std::find_if(
+        category->sub_categories.begin(),
+        category->sub_categories.end(),
+        [&category_name](const CategoriesElem* const sub_category) {
+            return !sub_category->category_name.compare(category_name);
+        });
+    if (found_category != category->sub_categories.end())
+        return *found_category;
     return nullptr;
+}
+
+bool SubCategoriesContainCategory(const CategoriesElem* category, const std::string &category_name)
+{
+    auto found_category = GetSubCategoryByName(category, category_name);
+    return found_category != nullptr;
 }
 
 bool AddSubCategory(CategoriesElem* category, const std::string &new_category_name)
@@ -155,6 +151,7 @@ bool AddSubCategory(CategoriesElem* category, const std::string &new_category_na
 
 void GetAllNestedExpenses(std::list<ExpenseElem> &expenses, const CategoriesElem* category)
 {
+    // TODO: use algo whet UT will be ready
     for (auto expense = category->expenses.begin(); expense != category->expenses.end(); ++expense) {
         expenses.push_back(*expense);
     }
@@ -188,9 +185,14 @@ std::list<std::string> GetExpenses(CategoriesElem* categories, const std::string
 
     CategoriesElem* category = GetSubCategoryByName(categories, selected_category);
     if (category != nullptr) {
-        for (auto expense = category->expenses.begin(); expense != category->expenses.end(); ++expense) {
-            expenses.push_back(expense->ToStr());
-        }
+        expenses.resize(category->expenses.size());
+        std::transform(
+            category->expenses.begin(),
+            category->expenses.end(),
+            expenses.begin(),
+            [](const ExpenseElem& expense){
+                return expense.ToStr();
+            });
     }
     return expenses;
 }
@@ -205,14 +207,19 @@ std::list<std::string> GetAllExpenses(CategoriesElem* categories, const std::str
         std::list<ExpenseElem> expenses;
         GetAllNestedExpenses(expenses, category);
         expenses.sort(CompareExpensesByDate);
-        for (auto expense = expenses.begin(); expense != expenses.end(); ++expense) {
-            expenses_str.push_back(expense->ToStr());
-        }
+        expenses_str.resize(expenses.size());
+        std::transform(
+            expenses.begin(),
+            expenses.end(),
+            expenses_str.begin(),
+            [](const ExpenseElem& expense){
+                return expense.ToStr();
+            });
     }
     return expenses_str;
 }
 
-void Buy(CategoriesElem* categories, const std::string &selected_category, const unsigned int cost, const std::string &info, struct tm * now)
+void Buy(CategoriesElem* categories, const std::string &selected_category, const unsigned int cost, const std::string &info, struct tm* now)
 {
     CategoriesElem* category = nullptr;
     if (selected_category.empty())
@@ -309,7 +316,7 @@ Datetime::Datetime(unsigned short y_, unsigned short mn_, unsigned short d_,
     y(y_), mn(mn_), d(d_), h(h_), m(m_), s(s_)
 {}
 
-Datetime::Datetime(const struct tm * t)
+Datetime::Datetime(const struct tm* t)
 {
     y  = t->tm_year + 1900;
     mn = t->tm_mon + 1;
