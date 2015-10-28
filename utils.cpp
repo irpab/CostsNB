@@ -6,7 +6,7 @@ namespace utils
 
 std::string MonthNumToStr(const unsigned short month)
 {
-    switch (month) {
+  switch (month) {
     case  1: return "Jan";
     case  2: return "Feb";
     case  3: return "Mar";
@@ -20,7 +20,7 @@ std::string MonthNumToStr(const unsigned short month)
     case 11: return "Nov";
     case 12: return "Dec";
     default: return "---";
-    }
+  }
 }
 
 unsigned short MonthStrToNum(const std::string &month)
@@ -42,14 +42,14 @@ unsigned short MonthStrToNum(const std::string &month)
 
 struct tm * Now()
 {
-    time_t t = time(0);
-    return localtime(&t);
+  time_t t = time(0);
+  return localtime(&t);
 }
 
 bool FileExists(const std::string& fileName)
 {
-    std::ifstream infile(fileName);
-    return infile.good();
+  std::ifstream infile(fileName);
+  return infile.good();
 }
 
 std::string EscapeJsonString(const std::string& input) {

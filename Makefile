@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-std=c++11
+CXXFLAGS=-std=c++11 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
 LDLIBS=-lcurl
 INCLUDE=-I json/ -I restclient-cpp/ -I ./
 

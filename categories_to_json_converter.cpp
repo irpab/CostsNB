@@ -96,30 +96,30 @@ void CategoriesToJsonConverterJsoncppLib::ConvertJsonToCategories(CategoriesElem
 // TODO: move semantics
 std::string CategoriesToJsonConverterJsoncppLib::CategoriesToJsonStr(CategoriesElem *root_category)
 {
-    Json::Value json_categories;
-    json_categories["version"] = SUPPORTED_DB_VERSION;
-    CategoriesElem *dummy_root_category = new CategoriesElem("Dummy Root Category", nullptr);
-    dummy_root_category->sub_categories.push_back(root_category);
+  Json::Value json_categories;
+  json_categories["version"] = SUPPORTED_DB_VERSION;
+  CategoriesElem *dummy_root_category = new CategoriesElem("Dummy Root Category", nullptr);
+  dummy_root_category->sub_categories.push_back(root_category);
 
-    ConvertCategoriesToJson(json_categories, dummy_root_category);
-    dummy_root_category->sub_categories.clear();
-    delete dummy_root_category;
-    return json_categories.toStyledString();
+  ConvertCategoriesToJson(json_categories, dummy_root_category);
+  dummy_root_category->sub_categories.clear();
+  delete dummy_root_category;
+  return json_categories.toStyledString();
 }
 
 CategoriesElem * CategoriesToJsonConverterJsoncppLib::JsonStrToCategories(const std::string &json_str_categories)
 {
-    CategoriesElem* dummy_root_category = new CategoriesElem("Dummy Root Category", nullptr);
-    std::istringstream json_str_categories_stream(json_str_categories);
-    Json::Value json_categories;
+  CategoriesElem* dummy_root_category = new CategoriesElem("Dummy Root Category", nullptr);
+  std::istringstream json_str_categories_stream(json_str_categories);
+  Json::Value json_categories;
 
-    json_str_categories_stream >> json_categories;
-    ConvertJsonToCategories(dummy_root_category, 0, json_categories["sub_categories"]);
+  json_str_categories_stream >> json_categories;
+  ConvertJsonToCategories(dummy_root_category, 0, json_categories["sub_categories"]);
 
-    CategoriesElem* root_category = dummy_root_category->sub_categories.front();
-    dummy_root_category->sub_categories.clear();
-    delete dummy_root_category;
-    root_category->parent_category = nullptr;
+  CategoriesElem* root_category = dummy_root_category->sub_categories.front();
+  dummy_root_category->sub_categories.clear();
+  delete dummy_root_category;
+  root_category->parent_category = nullptr;
 
-    return root_category;
+  return root_category;
 }

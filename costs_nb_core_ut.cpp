@@ -702,52 +702,52 @@ TEST_CASE( "CategoriesElem.==", "[internal]" ) {
 }
 
 TEST_CASE( "CategoriesElem.copy_assign", "[internal]" ) {
-    CREATE_ROOT_CATEGORY(category, "Cat1");
-    CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
-    CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
-    CREATE_LEAF_CATEGORY(cat111, cat11, "Cat111");
-    CREATE_LEAF_CATEGORY(cat112, cat11, "Cat112");
-    CREATE_LEAF_CATEGORY(cat1111, cat111, "Cat1111");
-    LINK_ROOT_LEAF(category, cat11);
-    LINK_ROOT_LEAF(category, cat12);
-    LINK_ROOT_LEAF(cat11, cat111);
-    LINK_ROOT_LEAF(cat11, cat112);
-    LINK_ROOT_LEAF(cat111, cat1111);
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+  CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
+  CREATE_LEAF_CATEGORY(cat111, cat11, "Cat111");
+  CREATE_LEAF_CATEGORY(cat112, cat11, "Cat112");
+  CREATE_LEAF_CATEGORY(cat1111, cat111, "Cat1111");
+  LINK_ROOT_LEAF(category, cat11);
+  LINK_ROOT_LEAF(category, cat12);
+  LINK_ROOT_LEAF(cat11, cat111);
+  LINK_ROOT_LEAF(cat11, cat112);
+  LINK_ROOT_LEAF(cat111, cat1111);
 
-    CREATE_EXPENSE_D(e1_1   , Datetime(2015,  1, 11,  1, 21, 0), 1);
-    CREATE_EXPENSE_D(e1_2   , Datetime(2015,  7,  5,  6, 19, 0), 2);
-    CREATE_EXPENSE_D(e11_1  , Datetime(2014,  2, 21, 13, 34, 0), 3);
-    CREATE_EXPENSE_D(e11_2  , Datetime(2015,  1,  4,  3, 35, 0), 4);
-    CREATE_EXPENSE_D(e12_1  , Datetime(2015,  4,  1,  9, 13, 0), 5);
-    CREATE_EXPENSE_D(e111_1 , Datetime(2017,  4,  6,  7, 56, 0), 6);
-    CREATE_EXPENSE_D(e112_1 , Datetime(2015,  1,  1,  1,  7, 0), 7);
-    CREATE_EXPENSE_D(e112_2 , Datetime(2017,  9, 27, 21,  1, 0), 8);
-    CREATE_EXPENSE_D(e1111_1, Datetime(2015, 12,  1, 23,  2, 0), 9);
+  CREATE_EXPENSE_D(e1_1   , Datetime(2015,  1, 11,  1, 21, 0), 1);
+  CREATE_EXPENSE_D(e1_2   , Datetime(2015,  7,  5,  6, 19, 0), 2);
+  CREATE_EXPENSE_D(e11_1  , Datetime(2014,  2, 21, 13, 34, 0), 3);
+  CREATE_EXPENSE_D(e11_2  , Datetime(2015,  1,  4,  3, 35, 0), 4);
+  CREATE_EXPENSE_D(e12_1  , Datetime(2015,  4,  1,  9, 13, 0), 5);
+  CREATE_EXPENSE_D(e111_1 , Datetime(2017,  4,  6,  7, 56, 0), 6);
+  CREATE_EXPENSE_D(e112_1 , Datetime(2015,  1,  1,  1,  7, 0), 7);
+  CREATE_EXPENSE_D(e112_2 , Datetime(2017,  9, 27, 21,  1, 0), 8);
+  CREATE_EXPENSE_D(e1111_1, Datetime(2015, 12,  1, 23,  2, 0), 9);
 
-    LINK_EXPENSE(category, e1_1);
-    LINK_EXPENSE(category, e1_2);
-    LINK_EXPENSE(cat11, e11_1);
-    LINK_EXPENSE(cat11, e11_2);
-    LINK_EXPENSE(cat12, e12_1);
-    LINK_EXPENSE(cat111, e111_1);
-    LINK_EXPENSE(cat112, e112_1);
-    LINK_EXPENSE(cat112, e112_2);
-    LINK_EXPENSE(cat1111, e1111_1);
+  LINK_EXPENSE(category, e1_1);
+  LINK_EXPENSE(category, e1_2);
+  LINK_EXPENSE(cat11, e11_1);
+  LINK_EXPENSE(cat11, e11_2);
+  LINK_EXPENSE(cat12, e12_1);
+  LINK_EXPENSE(cat111, e111_1);
+  LINK_EXPENSE(cat112, e112_1);
+  LINK_EXPENSE(cat112, e112_2);
+  LINK_EXPENSE(cat1111, e1111_1);
 
-    CategoriesElem *category2 = new CategoriesElem(*category);
-    CategoriesElem *category3 = new CategoriesElem(*category2);
-    REQUIRE(*category2 == *category);
-    REQUIRE(*category2 == *category3);
-    REQUIRE(*category3 == *category);
-    delete category;
-    REQUIRE(*category2 == *category3);
+  CategoriesElem *category2 = new CategoriesElem(*category);
+  CategoriesElem *category3 = new CategoriesElem(*category2);
+  REQUIRE(*category2 == *category);
+  REQUIRE(*category2 == *category3);
+  REQUIRE(*category3 == *category);
+  delete category;
+  REQUIRE(*category2 == *category3);
 
-    category = new CategoriesElem("", nullptr, 0);
-    REQUIRE(*category != *category2);
-    *category = *category2;
-    REQUIRE(*category == *category2);
-    REQUIRE(*category == *category3);
-    REQUIRE(*category2 == *category3);
+  category = new CategoriesElem("", nullptr, 0);
+  REQUIRE(*category != *category2);
+  *category = *category2;
+  REQUIRE(*category == *category2);
+  REQUIRE(*category == *category3);
+  REQUIRE(*category2 == *category3);
 }
 
 TEST_CASE( "JsoncppLib.CategoriesToJsonStr", "[ext_db_converter]" ) {

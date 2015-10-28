@@ -20,7 +20,6 @@ namespace utils
   struct tm * Now();
   bool FileExists(const std::string& fileName);
   std::string EscapeJsonString(const std::string& input);
-
 }
 
 #endif // UTILS_H
