@@ -236,6 +236,7 @@ void UtVerifyExpenses(const std::vector<std::string> expenses0, const std::list<
 }
 
 extern std::list<std::string> GetExpenses(CategoriesElem* categories, const std::string &selectedCategory0);
+extern std::list<std::string> GetExpenses(CategoriesElem* categories);
 TEST_CASE( "GetExpenses", "[internal]" ) {
   CREATE_ROOT_CATEGORY(category, "Cat1");
   CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
@@ -257,6 +258,10 @@ TEST_CASE( "GetExpenses", "[internal]" ) {
   UtVerifyExpenses({e11_1.ToStr(), e11_2.ToStr(), e11_3.ToStr()}, GetExpenses(category, "Cat11"));
   UtVerifyExpenses({e12_1.ToStr(), e12_2.ToStr()}, GetExpenses(category, "Cat12"));
   REQUIRE(GetExpenses(category, "Cat10").empty());
+
+  UtVerifyExpenses({e11_1.ToStr(), e11_2.ToStr(), e11_3.ToStr()}, GetExpenses(cat11));
+  UtVerifyExpenses({e12_1.ToStr(), e12_2.ToStr()}, GetExpenses(cat12));
+  REQUIRE(GetExpenses(category).empty());
 }
 
 TEST_CASE( "ExpenseElem.ToStr", "[internal]" ) {
@@ -380,25 +385,56 @@ TEST_CASE( "Buy.logic", "[internal]" ) {
 extern bool RemoveCategory(CategoriesElem* categories, const std::string &removing_category_name_);
 TEST_CASE( "RemoveCategory", "[internal]" ) {
   CREATE_ROOT_CATEGORY(category, "Cat1");
-  ADD_SUB_CATEGORY(category, "Cat11");
-  ADD_SUB_CATEGORY(category, "Cat12");
-  ADD_SUB_CATEGORY(category, "Cat13");
+  CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+  CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
+  CREATE_LEAF_CATEGORY(cat13, category, "Cat13");
+  CREATE_LEAF_CATEGORY(cat121, cat12, "Cat121");
+  LINK_ROOT_LEAF(category, cat11);
+  LINK_ROOT_LEAF(category, cat12);
+  LINK_ROOT_LEAF(category, cat13);
+  LINK_ROOT_LEAF(cat12, cat121);
+  CREATE_EXPENSE_D(e1_1, Datetime(2015,  1,  2, 12, 28, 0), 1423);
+  CREATE_EXPENSE_D(e11_1, Datetime(2014,  2, 12,  7,  3, 0), 134);
+  CREATE_EXPENSE_D(e12_1, Datetime(2016,  3,  9,  1, 34, 0), 3);
+  CREATE_EXPENSE_D(e13_1, Datetime(2014,  6,  4, 21, 54, 0), 95);
+  CREATE_EXPENSE_D(e121_1, Datetime(2015,  7,  1,  3, 17, 0), 72);
+  LINK_EXPENSE(category, e1_1);
+  LINK_EXPENSE(cat11, e11_1);
+  LINK_EXPENSE(cat12, e12_1);
+  LINK_EXPENSE(cat13, e13_1);
+  LINK_EXPENSE(cat121, e121_1);
   UtVerifySubCategories({"Cat11", "Cat12", "Cat13"}, category);
+  UtVerifyExpenses({e1_1.ToStr()}, GetExpenses(category));
+  UtVerifyExpenses({e11_1.ToStr()}, GetExpenses(cat11));
+  UtVerifyExpenses({e12_1.ToStr()}, GetExpenses(cat12));
+  UtVerifyExpenses({e13_1.ToStr()}, GetExpenses(cat13));
+  UtVerifyExpenses({e121_1.ToStr()}, GetExpenses(cat121));
 
   REQUIRE(!RemoveCategory(category, "Cat14"));
   REQUIRE(!RemoveCategory(category, "Cat1"));
   REQUIRE(!RemoveCategory(category, ""));
   UtVerifySubCategories({"Cat11", "Cat12", "Cat13"}, category);
+  UtVerifyExpenses({e1_1.ToStr()}, GetExpenses(category));
+  UtVerifyExpenses({e11_1.ToStr()}, GetExpenses(cat11));
+  UtVerifyExpenses({e12_1.ToStr()}, GetExpenses(cat12));
+  UtVerifyExpenses({e13_1.ToStr()}, GetExpenses(cat13));
+  UtVerifyExpenses({e121_1.ToStr()}, GetExpenses(cat121));
 
   REQUIRE( RemoveCategory(category, "Cat12"));
   UtVerifySubCategories({"Cat11", "Cat13"}, category);
   REQUIRE(!RemoveCategory(category, "Cat12"));
+  UtVerifyExpenses({e1_1.ToStr(), e12_1.ToStr(), e121_1.ToStr()}, GetExpenses(category));
+  UtVerifyExpenses({e11_1.ToStr()}, GetExpenses(cat11));
+  UtVerifyExpenses({e13_1.ToStr()}, GetExpenses(cat13));
 
   REQUIRE( RemoveCategory(category, "Cat13"));
   UtVerifySubCategories({"Cat11"}, category);
+  UtVerifyExpenses({e1_1.ToStr(), e12_1.ToStr(), e121_1.ToStr(), e13_1.ToStr()}, GetExpenses(category));
+  UtVerifyExpenses({e11_1.ToStr()}, GetExpenses(cat11));
 
   REQUIRE( RemoveCategory(category, "Cat11"));
   UtVerifySubCategories({}, category);
+  UtVerifyExpenses({e1_1.ToStr(), e12_1.ToStr(), e121_1.ToStr(), e13_1.ToStr(), e11_1.ToStr()}, GetExpenses(category));
 }
 
 extern bool MoveCategoryBack(CategoriesElem* categories, const std::string &moving_category_name_);
@@ -463,10 +499,93 @@ TEST_CASE( "MoveCategoryTo", "[internal]" ) {
   UtVerifySubCategories({"Cat1121", "Cat111"}, cat112);
 }
 
-// TODO: void GetAllNestedExpenses(std::list<ExpenseElem> &expenses, const CategoriesElem* category);
+extern std::tuple<std::list<std::string>, std::string> GetCurrentCategories(CategoriesElem* categories);
+TEST_CASE( "GetCurrentCategories", "[internal]" ) {
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+  CREATE_LEAF_CATEGORY(cat111, cat11, "Cat111");
+  CREATE_LEAF_CATEGORY(cat112, cat11, "Cat112");
+  CREATE_LEAF_CATEGORY(cat113, cat11, "Cat113");
+  CREATE_LEAF_CATEGORY(cat1111, cat111, "Cat1111");
+  CREATE_LEAF_CATEGORY(cat1121, cat112, "Cat1121");
+  CREATE_LEAF_CATEGORY(cat1122, cat112, "Cat1122");
+  LINK_ROOT_LEAF(category, cat11);
+  LINK_ROOT_LEAF(cat11, cat111);
+  LINK_ROOT_LEAF(cat11, cat112);
+  LINK_ROOT_LEAF(cat11, cat113);
+  LINK_ROOT_LEAF(cat111, cat1111);
+  LINK_ROOT_LEAF(cat112, cat1121);
+  LINK_ROOT_LEAF(cat112, cat1122);
 
+  std::list<std::string> cur_cat_sub_cats;
+  std::string cur_cat_name;
+  std::vector<std::string> right_sub_cats;
 
-// Converters UT
+  std::tie(cur_cat_sub_cats, cur_cat_name) = GetCurrentCategories(category);
+  REQUIRE(COMPARE_STRINGS(cur_cat_name, "Cat1"));
+  right_sub_cats = { "> Cat11" };
+  REQUIRE(std::equal(cur_cat_sub_cats.begin(), cur_cat_sub_cats.end(), right_sub_cats.begin()));
+
+  std::tie(cur_cat_sub_cats, cur_cat_name) = GetCurrentCategories(cat11);
+  REQUIRE(COMPARE_STRINGS(cur_cat_name, "Cat11"));
+  right_sub_cats = { "> Cat111", "> Cat112", "Cat113" };
+  REQUIRE(std::equal(cur_cat_sub_cats.begin(), cur_cat_sub_cats.end(), right_sub_cats.begin()));
+
+  std::tie(cur_cat_sub_cats, cur_cat_name) = GetCurrentCategories(cat112);
+  REQUIRE(COMPARE_STRINGS(cur_cat_name, "Cat112"));
+  right_sub_cats = { "Cat1121", "Cat1122" };
+  REQUIRE(std::equal(cur_cat_sub_cats.begin(), cur_cat_sub_cats.end(), right_sub_cats.begin()));
+}
+
+extern void GetAllNestedExpenses(std::list<ExpenseElem> &expenses, const CategoriesElem* category);
+TEST_CASE( "GetAllNestedExpenses", "[internal]" ) {
+  CREATE_ROOT_CATEGORY(category, "Cat1");
+  CREATE_LEAF_CATEGORY(cat11, category, "Cat11");
+  CREATE_LEAF_CATEGORY(cat12, category, "Cat12");
+  CREATE_LEAF_CATEGORY(cat13, category, "Cat13");
+  CREATE_LEAF_CATEGORY(cat121, cat12, "Cat121");
+  LINK_ROOT_LEAF(category, cat11);
+  LINK_ROOT_LEAF(category, cat12);
+  LINK_ROOT_LEAF(category, cat13);
+  LINK_ROOT_LEAF(cat12, cat121);
+  CREATE_EXPENSE_D(e1_1, Datetime(2015,  1,  2, 12, 28, 0), 1423);
+  CREATE_EXPENSE_D(e1_2, Datetime(2016, 11,  9, 12, 28, 0), 642);
+  CREATE_EXPENSE_D(e11_1, Datetime(2014,  2, 12,  7,  3, 0), 134);
+  CREATE_EXPENSE_D(e12_1, Datetime(2016,  3,  9,  1, 34, 0), 3);
+  CREATE_EXPENSE_D(e12_2, Datetime(2015,  1,  1,  1, 34, 0), 3);
+  CREATE_EXPENSE_D(e13_1, Datetime(2014,  6,  4, 21, 54, 0), 95);
+  CREATE_EXPENSE_D(e121_1, Datetime(2015,  7,  1,  3, 17, 0), 72);
+  LINK_EXPENSE(category, e1_1);
+  LINK_EXPENSE(category, e1_2);
+  LINK_EXPENSE(cat11, e11_1);
+  LINK_EXPENSE(cat12, e12_1);
+  LINK_EXPENSE(cat12, e12_2);
+  LINK_EXPENSE(cat13, e13_1);
+  LINK_EXPENSE(cat121, e121_1);
+
+  std::list<ExpenseElem> expenses;
+  std::vector<ExpenseElem> right_expenses;
+
+  expenses.clear();
+  GetAllNestedExpenses(expenses, category);
+  right_expenses = { e1_1, e1_2, e11_1, e12_1, e12_2, e121_1, e13_1 };
+  REQUIRE(std::equal(expenses.begin(), expenses.end(), right_expenses.begin()));
+
+  expenses.clear();
+  GetAllNestedExpenses(expenses, cat11);
+  right_expenses = { e11_1 };
+  REQUIRE(std::equal(expenses.begin(), expenses.end(), right_expenses.begin()));
+
+  expenses.clear();
+  GetAllNestedExpenses(expenses, cat13);
+  right_expenses = { e13_1 };
+  REQUIRE(std::equal(expenses.begin(), expenses.end(), right_expenses.begin()));
+
+  expenses.clear();
+  GetAllNestedExpenses(expenses, cat12);
+  right_expenses = { e12_1, e12_2, e121_1 };
+  REQUIRE(std::equal(expenses.begin(), expenses.end(), right_expenses.begin()));
+}
 
 TEST_CASE( "Datetime.==", "[internal]" ) {
   Datetime d1(2015,  1, 11,  1, 21, 0);

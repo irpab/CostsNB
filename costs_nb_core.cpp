@@ -44,27 +44,27 @@ bool operator==(const CategoriesElem& e1, const CategoriesElem& e2) {
 
   if (e1.sub_categories.size() != e2.sub_categories.size())
     return false;
-  {
-    auto sub_category1 = e1.sub_categories.begin();
-    auto sub_category2 = e2.sub_categories.begin();
-    for (;sub_category1 != e1.sub_categories.end(), sub_category2 != e2.sub_categories.end();
-        ++sub_category1, ++sub_category2) {
-      if (**sub_category1 != **sub_category2)
-        return false;
-    }
-  }
+
+  auto sub_categories_are_equal = std::equal(e1.sub_categories.begin(),
+    e1.sub_categories.end(),
+    e2.sub_categories.begin(),
+    [](const CategoriesElem* const ce1, const CategoriesElem* const ce2) {
+      return *ce1 == *ce2;
+    });
+  if (!sub_categories_are_equal)
+    return false;
 
   if (e1.expenses.size() != e2.expenses.size())
     return false;
-  {
-    auto expens1 = e1.expenses.begin();
-    auto expens2 = e2.expenses.begin();
-    for (;expens1 != e1.expenses.end(), expens2 != e2.expenses.end();
-        ++expens1, ++expens2) {
-      if (*expens1 != *expens2)
-        return false;
-    }
-  }
+
+  auto expenses_are_equal = std::equal(e1.expenses.begin(),
+    e1.expenses.end(),
+    e2.expenses.begin(),
+    [](const ExpenseElem& ee1, const ExpenseElem& ee2) {
+      return ee1 == ee2;
+    });
+  if (!expenses_are_equal)
+    return false;
 
   return true;
 }
@@ -151,13 +151,9 @@ bool AddSubCategory(CategoriesElem* category, const std::string &new_category_na
 
 void GetAllNestedExpenses(std::list<ExpenseElem> &expenses, const CategoriesElem* category)
 {
-  // TODO: use algo whet UT will be ready
-  for (auto expense = category->expenses.begin(); expense != category->expenses.end(); ++expense) {
-    expenses.push_back(*expense);
-  }
-  for (auto sub_category = category->sub_categories.begin(); sub_category != category->sub_categories.end(); ++sub_category) {
-    GetAllNestedExpenses(expenses, *sub_category);
-  }
+  std::copy(category->expenses.begin(), category->expenses.end(), std::back_inserter(expenses));
+  for (const auto& sub_category: category->sub_categories)
+    GetAllNestedExpenses(expenses, sub_category);
 }
 
 bool RenameCategory(CategoriesElem* categories, const std::string &old_name_, const std::string &new_name)
@@ -178,23 +174,30 @@ bool RenameCategory(CategoriesElem* categories, const std::string &old_name_, co
   return true;
 }
 
-std::list<std::string> GetExpenses(CategoriesElem* categories, const std::string &selected_category_)
+std::list<std::string> GetExpenses(CategoriesElem* category)
 {
   std::list<std::string> expenses;
+
+  std::transform(
+    category->expenses.begin(),
+    category->expenses.end(),
+    std::back_inserter(expenses),
+    [](const ExpenseElem& expense){
+      return expense.ToStr();
+    });
+
+  return expenses;
+}
+
+std::list<std::string> GetExpenses(CategoriesElem* categories, const std::string &selected_category_)
+{
   std::string selected_category = RemoveDisplaySubCategoriesPrefix(selected_category_);
 
   CategoriesElem* category = GetSubCategoryByName(categories, selected_category);
   if (category != nullptr) {
-    expenses.resize(category->expenses.size());
-    std::transform(
-      category->expenses.begin(),
-      category->expenses.end(),
-      expenses.begin(),
-      [](const ExpenseElem& expense){
-        return expense.ToStr();
-      });
+    return GetExpenses(category);
   }
-  return expenses;
+  return std::list<std::string>();
 }
 
 std::list<std::string> GetAllExpenses(CategoriesElem* categories, const std::string &selected_category_)
@@ -207,11 +210,10 @@ std::list<std::string> GetAllExpenses(CategoriesElem* categories, const std::str
     std::list<ExpenseElem> expenses;
     GetAllNestedExpenses(expenses, category);
     expenses.sort(CompareExpensesByDate);
-    expenses_str.resize(expenses.size());
     std::transform(
       expenses.begin(),
       expenses.end(),
-      expenses_str.begin(),
+      std::back_inserter(expenses_str),
       [](const ExpenseElem& expense){
         return expense.ToStr();
       });
@@ -253,13 +255,10 @@ bool RemoveCategory(CategoriesElem* categories, const std::string &removing_cate
   if (category == nullptr)
     return false;
 
-  std::list<ExpenseElem> expenses;
-  GetAllNestedExpenses(expenses, category);
-  for (auto expense = expenses.begin(); expense != expenses.end(); ++expense) {
-    category->parent_category->expenses.push_back(*expense);
-  }
+  GetAllNestedExpenses(category->parent_category->expenses, category);
 
   categories->sub_categories.remove(category);
+  delete category;
 
   return true;
 }
@@ -305,6 +304,21 @@ bool MoveCategoryTo(CategoriesElem* current_parent, const std::string &moving_ca
   if (new_parent == nullptr)
     return false;
   return MoveCategory(current_parent, new_parent, moving_category_name);
+}
+
+std::tuple<std::list<std::string>, std::string> GetCurrentCategories(CategoriesElem* categories)
+{
+  std::list<std::string> categories_names;
+
+  std::transform(
+    categories->sub_categories.begin(),
+    categories->sub_categories.end(),
+    std::back_inserter(categories_names),
+    [](const CategoriesElem* const sub_category){
+      return AddDisplaySubCategoriesPrefix(sub_category);
+    });
+
+  return std::make_tuple(categories_names, categories->category_name);
 }
 
 /////////////////////////////
@@ -410,7 +424,7 @@ CategoriesElem::~CategoriesElem()
     delete sub_categories.front(), sub_categories.pop_front();
 }
 
-bool CategoriesElem::IsRootCategory()
+bool CategoriesElem::IsRootCategory() const
 {
   return parent_category == nullptr;
 }
@@ -433,15 +447,9 @@ CostsNbCore::~CostsNbCore()
   delete categories;
 }
 
-std::tuple<std::list<std::string>, std::string> CostsNbCore::GetCurrentCategories()
+std::tuple<std::list<std::string>, std::string> CostsNbCore::GetCurrentCategories() const
 {
-  std::list<std::string> categories_names;
-  for (auto category = categories->sub_categories.begin(); category != categories->sub_categories.end(); ++category)
-  {
-    std::string display_category_name = AddDisplaySubCategoriesPrefix(*category);
-    categories_names.push_back(display_category_name);
-  }
-  return std::make_tuple(categories_names, categories->category_name);
+  return ::GetCurrentCategories(categories);
 }
 
 bool CostsNbCore::CategorySelected(const std::string &selected_category_name_)
@@ -508,12 +516,12 @@ void CostsNbCore::Buy(const std::string &selected_category, const unsigned int &
   ::Buy(categories, selected_category, cost, info);
 }
 
-std::list<std::string> CostsNbCore::GetExpenses(const std::string &selected_category)
+std::list<std::string> CostsNbCore::GetExpenses(const std::string &selected_category) const
 {
   return ::GetExpenses(categories, selected_category);
 }
 
-std::list<std::string> CostsNbCore::GetAllExpenses(const std::string &selected_category)
+std::list<std::string> CostsNbCore::GetAllExpenses(const std::string &selected_category) const
 {
   return ::GetAllExpenses(categories, selected_category);
 }

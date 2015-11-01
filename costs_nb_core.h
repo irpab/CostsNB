@@ -65,7 +65,7 @@ struct CategoriesElem
   // TODO: move constr/assign
   friend void swap(CategoriesElem& first, CategoriesElem& second);
 
-  bool IsRootCategory();
+  bool IsRootCategory() const;
 
   std::string category_name;
   unsigned int rating;
@@ -110,7 +110,7 @@ public:
   // CostsNbCore& operator=(CostsNbCore copy);
   ~CostsNbCore();
 
-  std::tuple<std::list<std::string>, std::string> GetCurrentCategories();
+  std::tuple<std::list<std::string>, std::string> GetCurrentCategories() const;
   bool CategorySelected(const std::string &selected_category);
   bool RemoveCategory(const std::string &selected_category);
   bool RenameCategory(const std::string &old_name, const std::string &new_name);
@@ -120,8 +120,8 @@ public:
   bool CategoryAdd(const std::string &new_category);
   bool CategoryAddSub(const std::string &parent_category, const std::string &new_category);
   void Buy(const std::string &selected_category, const unsigned int &cost, const std::string &info);
-  std::list<std::string> GetExpenses(const std::string &selected_category);
-  std::list<std::string> GetAllExpenses(const std::string &selected_category);
+  std::list<std::string> GetExpenses(const std::string &selected_category) const;
+  std::list<std::string> GetAllExpenses(const std::string &selected_category) const;
 
 private:
   CategoriesElem *categories;
